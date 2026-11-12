@@ -1,0 +1,13 @@
+<resources>
+    <style name="Theme.MoisesSongs" parent="android:Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:colorAccent">@android:color/white</item>
+    </style>
+    <style name="Theme.MoisesSongs.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@android:color/black</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+        <item name="postSplashScreenTheme">@style/Theme.MoisesSongs</item>
+    </style>
+</resources>
