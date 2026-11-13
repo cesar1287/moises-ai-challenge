@@ -45,20 +45,28 @@ class SongsJourneyTest {
         rule.onNodeWithText("Get Lucky").assertIsDisplayed()
     }
 
+    private fun SemanticsNodeInteraction.assertReachable(): SemanticsNodeInteraction {
+        // Short displays scroll the player; navigation can also briefly expose outgoing content.
+        rule.waitUntil(5_000) {
+            runCatching {
+                if (!isDisplayed()) performScrollTo()
+                isDisplayed()
+            }.getOrDefault(false)
+        }
+        return assertIsDisplayed()
+    }
+
     @Test fun searchPlayerOptionsAlbumTrackAndBackFormACompleteJourney() {
         content()
         search()
         rule.onNodeWithText("Get Lucky").performClick()
         rule.onNodeWithText("Now playing").assertIsDisplayed()
-        rule.onNodeWithContentDescription("Preview timeline").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Preview timeline").assertReachable()
         rule.onNodeWithContentDescription("More options for Get Lucky").performClick()
         rule.onNodeWithText("View album").performClick()
-        rule.onNodeWithText("One More Time").assertIsDisplayed().performClick()
+        rule.onNodeWithText("One More Time").assertReachable().performClick()
         rule.onNodeWithText("Now playing").assertIsDisplayed()
-        rule.waitUntil(5_000) {
-            runCatching { rule.onNodeWithText("One More Time").isDisplayed() }.getOrDefault(false)
-        }
-        rule.onNodeWithText("One More Time").assertIsDisplayed()
+        rule.onNodeWithText("One More Time").assertReachable()
         rule.onNodeWithContentDescription("Back").performClick()
         rule.onNodeWithText("Songs").assertIsDisplayed()
     }
