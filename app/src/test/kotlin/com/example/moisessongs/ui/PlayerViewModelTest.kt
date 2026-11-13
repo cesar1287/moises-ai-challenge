@@ -29,6 +29,32 @@ class PlayerViewModelTest {
         .also { models.put("player", it) }
     @After fun cleanup() = models.clear()
 
+    @Test fun `selecting the same paused song resumes without resetting its position`() = runTest {
+        val vm = model()
+        runCurrent()
+        vm.select(song(), listOf(song()))
+        player.mutableState.value = player.state.value.copy(playing = true, positionMs = 12_000)
+        vm.pause()
+        vm.select(song(), listOf(song()))
+        assertTrue(vm.playback.value.playing)
+        assertEquals(12_000L, vm.playback.value.positionMs)
+        assertEquals(1, player.preparations.size)
+    }
+
+    @Test fun `selecting the same buffering or playing song never pauses or restarts it`() = runTest {
+        val vm = model()
+        runCurrent()
+        vm.select(song(), listOf(song()))
+        player.mutableState.value = player.state.value.copy(buffering = true, positionMs = 3_000)
+        vm.select(song(), listOf(song()))
+        assertTrue(vm.playback.value.playing)
+        player.mutableState.value = player.state.value.copy(buffering = false)
+        vm.select(song(), listOf(song()))
+        assertTrue(vm.playback.value.playing)
+        assertEquals(3_000L, vm.playback.value.positionMs)
+        assertEquals(1, player.preparations.size)
+    }
+
     @Test fun `history is recorded after playback starts rather than on selection or buffering`() = runTest {
         val vm = model()
         runCurrent()

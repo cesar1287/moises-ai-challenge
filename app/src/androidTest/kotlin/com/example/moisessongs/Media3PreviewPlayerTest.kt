@@ -78,4 +78,30 @@ class Media3PreviewPlayerTest {
         assertFalse(player.state.value.failed)
         assertEquals(2L, player.state.value.song!!.id)
     }
+
+    @Test fun playResumesWithoutResettingPositionAndIsIdempotent() = runBlocking<Unit> {
+        instrumentation.runOnMainSync {
+            player.prepare(testSong().copy(previewUrl = Uri.fromFile(source).toString()), false)
+            player.play()
+            player.play()
+        }
+        withTimeout(15.seconds) { player.state.first { it.playing && it.durationMs > 0 } }
+        instrumentation.runOnMainSync { player.pause(); player.seekTo(1_000) }
+        withTimeout(5.seconds) { player.state.first { !it.playing && it.positionMs >= 900 } }
+        instrumentation.runOnMainSync { player.play(); player.play() }
+        withTimeout(5.seconds) { player.state.first { it.playing && it.positionMs >= 900 } }
+    }
+
+    @Test fun playRetriesTheSamePreviewAfterAFailure() = runBlocking<Unit> {
+        val recoveredSource = File(source.parentFile, "recovered-preview-${System.nanoTime()}.wav")
+        try {
+            instrumentation.runOnMainSync {
+                player.prepare(testSong().copy(previewUrl = Uri.fromFile(recoveredSource).toString()), true)
+            }
+            withTimeout(15.seconds) { player.state.first { it.failed } }
+            source.copyTo(recoveredSource, overwrite = true)
+            instrumentation.runOnMainSync { player.play() }
+            withTimeout(5.seconds) { player.state.first { it.playing && !it.failed } }
+        } finally { recoveredSource.delete() }
+    }
 }

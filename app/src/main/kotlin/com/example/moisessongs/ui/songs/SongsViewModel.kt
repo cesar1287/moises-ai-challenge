@@ -87,14 +87,17 @@ class SongsViewModel(
         savedState[SavedStateKeys.SEARCH_INPUT] = value
         mutableState.update { it.copy(input = value, query = query, snapshot = null,
             loading = true, loadingMore = false, failure = null, appendFailed = false) }
+        load(refresh = true)
+    }
+
+    private fun observeSearch(query: String) {
         observation = viewModelScope.launch {
-            repository.observeSearch(query).catch {
-                mutableState.update { it.copy(failure = UiFailure.UNEXPECTED) }
+            repository.observeSearch(query).catch { failure ->
+                mutableState.update { it.copy(failure = failure.toUiFailure()) }
             }.collect { snapshot ->
                 mutableState.update { it.copy(snapshot = snapshot) }
             }
         }
-        load(refresh = true)
     }
 
     fun clearSearch() {
@@ -120,6 +123,8 @@ class SongsViewModel(
     private fun load(refresh: Boolean) {
         val query = state.value.query
         mutableState.update { it.copy(loading = refresh, loadingMore = !refresh, failure = null, appendFailed = false) }
+        // A caught cache-read failure completes its flow; retry must reconnect it.
+        if (observation?.isActive != true) observeSearch(query)
         request = viewModelScope.launch {
             try {
                 repository.loadSearch(query, refresh)

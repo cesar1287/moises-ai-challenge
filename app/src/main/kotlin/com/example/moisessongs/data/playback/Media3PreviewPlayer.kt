@@ -61,18 +61,22 @@ class Media3PreviewPlayer(context: Context, private val scope: CoroutineScope) :
         }
     }
 
-    override fun togglePlayback() {
+    override fun play() {
         val song = state.value.song ?: return
         if (song.previewUrl == null) return
-        val player = player()
-        when {
-            state.value.failed -> prepare(song, autoPlay = true)
-            player.isPlaying || player.playWhenReady && player.playbackState == Player.STATE_BUFFERING -> player.pause()
-            else -> {
-                if (player.playbackState == Player.STATE_ENDED) player.seekTo(0)
-                player.play()
-            }
+        if (state.value.failed) {
+            prepare(song, autoPlay = true)
+        } else {
+            val player = player()
+            if (player.playbackState == Player.STATE_ENDED) player.seekTo(0)
+            player.play()
         }
+    }
+
+    override fun togglePlayback() {
+        val player = engine ?: return
+        if (player.isPlaying || player.playWhenReady && player.playbackState == Player.STATE_BUFFERING) player.pause()
+        else play()
     }
 
     override fun seekTo(positionMs: Long) {

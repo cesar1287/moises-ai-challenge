@@ -72,6 +72,7 @@ class PlayerViewModel(
         mutableQueue.value = PlaybackQueue.startingWith(song, queue).songs
         savedState[SavedStateKeys.SELECTED_SONG_ID] = song.id
         if (playback.value.song?.id != song.id) player.prepare(song, autoPlay = true)
+        else player.play()
     }
 
     fun previous() = skip(-1)

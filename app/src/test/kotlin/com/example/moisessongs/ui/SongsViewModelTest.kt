@@ -17,6 +17,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -145,5 +146,41 @@ class SongsViewModelTest {
         assertEquals(2, subscriptions)
         assertNull(vm.state.value.failure)
         assertEquals(listOf(7L), vm.state.value.songs.map { it.id })
+    }
+
+    @Test fun `refresh reconnects a failed search observer and keeps the recovered stream active`() = runTest {
+        var readFailed = true
+        var subscriptions = 0
+        val source = object : SongRepository by repository {
+            override fun observeSearch(query: String) = flow {
+                subscriptions++
+                if (readFailed) throw DataFailureException(DataFailure.STORAGE, IOException("temporary read failure"))
+                emitAll(repository.observeSearch(query))
+            }
+        }
+        val vm = SongsViewModel(source, SavedStateHandle()).also { models.put("songs", it) }
+        vm.search("artist")
+        runCurrent()
+        assertEquals(UiFailure.UNEXPECTED, vm.state.value.failure)
+        assertTrue(vm.state.value.songs.isEmpty())
+
+        vm.refresh()
+        runCurrent()
+        assertEquals(UiFailure.UNEXPECTED, vm.state.value.failure)
+        assertFalse(vm.state.value.loading)
+
+        readFailed = false
+        vm.refresh()
+        runCurrent()
+        assertEquals(25, vm.state.value.songs.size)
+        assertNull(vm.state.value.failure)
+
+        vm.loadMore()
+        runCurrent()
+        assertEquals(50, vm.state.value.songs.size)
+        vm.refresh()
+        runCurrent()
+        assertEquals(3, subscriptions)
+        assertEquals(50, vm.state.value.songs.size)
     }
 }

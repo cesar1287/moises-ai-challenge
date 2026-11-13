@@ -19,20 +19,25 @@ data class AlbumUiState(val album: Album? = null, val loading: Boolean = true, v
 class AlbumViewModel(private val id: Long, private val repository: SongRepository) : ViewModel() {
     private val mutableState = MutableStateFlow(AlbumUiState())
     val state = mutableState.asStateFlow()
+    private var observation: Job? = null
     private var refreshJob: Job? = null
 
     init {
-        viewModelScope.launch {
-            repository.observeAlbum(id).catch {
-                mutableState.update { it.copy(failure = UiFailure.UNEXPECTED, loading = false) }
+        refresh()
+    }
+
+    private fun observeAlbum() {
+        observation = viewModelScope.launch {
+            repository.observeAlbum(id).catch { failure ->
+                mutableState.update { it.copy(failure = failure.toUiFailure(), loading = false) }
             }.collect { album -> mutableState.update { it.copy(album = album) } }
         }
-        refresh()
     }
 
     fun refresh() {
         if (refreshJob?.isActive == true) return
         mutableState.update { it.copy(loading = true, failure = null) }
+        if (observation?.isActive != true) observeAlbum()
         refreshJob = viewModelScope.launch {
             try {
                 repository.refreshAlbum(id)

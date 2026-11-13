@@ -95,6 +95,20 @@ class SongsJourneyTest {
         rule.onNodeWithText("View album").assertDoesNotExist()
         rule.onNodeWithText("Now playing").assertIsDisplayed()
     }
+
+    @Test fun selectingTheSamePausedSongFromHomeResumesItsPreview() {
+        content()
+        search()
+        rule.onNodeWithText("Get Lucky").performClick()
+        rule.onNodeWithContentDescription("Preview timeline").performSemanticsAction(
+            androidx.compose.ui.semantics.SemanticsActions.SetProgress
+        ) { it(.4f) }
+        rule.onNodeWithContentDescription("Pause preview").performClick()
+        rule.onNodeWithContentDescription("Back").performClick()
+        rule.onNodeWithText("Get Lucky").performClick()
+        rule.onNodeWithContentDescription("Pause preview").assertIsDisplayed()
+        rule.runOnIdle { assertEquals(12_000L, playback.state.value.positionMs) }
+    }
 }
 
 private class JourneyRepository : SongRepository {
@@ -122,6 +136,7 @@ private class JourneyRepository : SongRepository {
 private class JourneyPlayer : PreviewPlayer {
     override val state = MutableStateFlow(PlaybackState())
     override fun prepare(song: Song, autoPlay: Boolean) { state.value = PlaybackState(song, playing = autoPlay, durationMs = 30_000) }
+    override fun play() { state.value = state.value.copy(playing = true) }
     override fun togglePlayback() { state.value = state.value.copy(playing = !state.value.playing) }
     override fun seekTo(positionMs: Long) { state.value = state.value.copy(positionMs = positionMs) }
     override fun toggleRepeat() { state.value = state.value.copy(repeat = !state.value.repeat) }

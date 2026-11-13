@@ -68,6 +68,7 @@ class FakePlayer : PreviewPlayer {
         preparations += song to autoPlay
         mutableState.value = PlaybackState(song = song)
     }
+    override fun play() { mutableState.value = state.value.copy(playing = true) }
     override fun togglePlayback() { mutableState.value = state.value.copy(playing = !state.value.playing) }
     override fun seekTo(positionMs: Long) { mutableState.value = state.value.copy(positionMs = positionMs) }
     override fun toggleRepeat() { mutableState.value = state.value.copy(repeat = !state.value.repeat) }

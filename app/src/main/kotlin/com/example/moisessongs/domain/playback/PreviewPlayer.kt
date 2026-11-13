@@ -19,6 +19,8 @@ data class PlaybackState(
 interface PreviewPlayer {
     val state: StateFlow<PlaybackState>
     fun prepare(song: Song, autoPlay: Boolean)
+    /** Starts or resumes without pausing or restarting active playback. */
+    fun play()
     fun togglePlayback()
     fun seekTo(positionMs: Long)
     fun toggleRepeat()
