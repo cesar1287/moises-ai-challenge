@@ -44,6 +44,8 @@
     <string name="view_album">View album</string>
     <string name="album_unavailable">Album information isn’t available.</string>
     <string name="album">Album</string>
+    <string name="albums">Albums</string>
+    <string name="media_unavailable">This item is no longer available.</string>
     <string name="view_itunes">View on iTunes</string>
     <string name="itunes_attribution">Preview provided courtesy of iTunes</string>
     <string name="nothing_playing">Choose a song to start listening</string>

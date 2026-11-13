@@ -38,8 +38,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onStop() {
-        if (!isChangingConfigurations) player.pause()
-        super.onStop()
-    }
 }

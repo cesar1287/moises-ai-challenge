@@ -14,11 +14,13 @@ data class PlaybackState(
     val ended: Boolean = false,
     val failed: Boolean = false,
     val repeat: Boolean = false,
+    val historyFailed: Boolean = false,
 )
 
 interface PreviewPlayer {
     val state: StateFlow<PlaybackState>
-    fun prepare(song: Song, autoPlay: Boolean)
+    val queue: StateFlow<List<Song>>
+    fun prepare(song: Song, autoPlay: Boolean, queue: List<Song> = listOf(song))
     /** Starts or resumes without pausing or restarting active playback. */
     fun play()
     fun togglePlayback()

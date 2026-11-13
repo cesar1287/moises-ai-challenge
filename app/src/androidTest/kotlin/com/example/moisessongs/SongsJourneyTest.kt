@@ -135,7 +135,11 @@ private class JourneyRepository : SongRepository {
 
 private class JourneyPlayer : PreviewPlayer {
     override val state = MutableStateFlow(PlaybackState())
-    override fun prepare(song: Song, autoPlay: Boolean) { state.value = PlaybackState(song, playing = autoPlay, durationMs = 30_000) }
+    override val queue = MutableStateFlow<List<Song>>(emptyList())
+    override fun prepare(song: Song, autoPlay: Boolean, queue: List<Song>) {
+        this.queue.value = queue
+        state.value = PlaybackState(song, playing = autoPlay, durationMs = 30_000)
+    }
     override fun play() { state.value = state.value.copy(playing = true) }
     override fun togglePlayback() { state.value = state.value.copy(playing = !state.value.playing) }
     override fun seekTo(positionMs: Long) { state.value = state.value.copy(positionMs = positionMs) }

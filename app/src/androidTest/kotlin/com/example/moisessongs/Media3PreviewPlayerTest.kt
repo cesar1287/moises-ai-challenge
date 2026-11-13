@@ -1,11 +1,15 @@
 package com.example.moisessongs
 
 import android.net.Uri
+import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.moisessongs.data.playback.Media3PreviewPlayer
+import com.example.moisessongs.data.playback.PlaybackService
+import com.example.moisessongs.data.local.toEntity
+import com.example.moisessongs.domain.Song
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import org.junit.After
@@ -23,8 +27,10 @@ class Media3PreviewPlayerTest {
     private lateinit var player: Media3PreviewPlayer
     private lateinit var activity: ActivityScenario<ComponentActivity>
     private lateinit var source: File
+    private val application get() = instrumentation.targetContext.applicationContext as InstrumentedSongsApplication
 
     @Before fun setup() {
+        application.database.clearAllTables()
         activity = ActivityScenario.launch(ComponentActivity::class.java)
         source = File(instrumentation.targetContext.cacheDir, "test_tone.wav")
         instrumentation.context.assets.open("test_tone.wav").use { input ->
@@ -36,14 +42,19 @@ class Media3PreviewPlayerTest {
     @After fun cleanup() {
         instrumentation.runOnMainSync { player.release() }
         scope.cancel()
+        instrumentation.targetContext.stopService(Intent(instrumentation.targetContext, PlaybackService::class.java))
+        instrumentation.waitForIdleSync()
         activity.close()
         source.delete()
     }
 
+    private fun prepare(song: Song, autoPlay: Boolean) = runBlocking {
+        application.database.songs().putSongs(listOf(song.toEntity()))
+        instrumentation.runOnMainSync { player.prepare(song, autoPlay) }
+    }
+
     @Test fun playableDurationSeekingAndPausingUseTheActualPreview() = runBlocking {
-        instrumentation.runOnMainSync {
-            player.prepare(testSong().copy(previewUrl = Uri.fromFile(source).toString()), true)
-        }
+        prepare(testSong().copy(previewUrl = Uri.fromFile(source).toString()), true)
         val started = withTimeout(15.seconds) { player.state.first { it.playing && it.durationMs > 0 } }
         assertEquals(2000L, started.durationMs)
         assertNotEquals(testSong().durationMs, started.durationMs)
@@ -55,9 +66,7 @@ class Media3PreviewPlayerTest {
     }
 
     @Test fun completionStopsPlaybackAndToggleRestartsThePreview() = runBlocking {
-        instrumentation.runOnMainSync {
-            player.prepare(testSong().copy(previewUrl = Uri.fromFile(source).toString()), true)
-        }
+        prepare(testSong().copy(previewUrl = Uri.fromFile(source).toString()), true)
         withTimeout(15.seconds) { player.state.first { it.ended } }
         assertFalse(player.state.value.playing)
         instrumentation.runOnMainSync { player.togglePlayback() }
@@ -66,22 +75,18 @@ class Media3PreviewPlayerTest {
     }
 
     @Test fun playbackFailureIsVisibleAndSelectingAnotherSongRecovers() = runBlocking {
-        instrumentation.runOnMainSync {
-            player.prepare(testSong().copy(previewUrl = Uri.fromFile(File(source.parentFile, "missing.wav")).toString()), true)
-        }
+        prepare(testSong().copy(previewUrl = Uri.fromFile(File(source.parentFile, "missing.wav")).toString()), true)
         withTimeout(15.seconds) { player.state.first { it.failed } }
         assertFalse(player.state.value.playing)
-        instrumentation.runOnMainSync {
-            player.prepare(testSong(2).copy(previewUrl = Uri.fromFile(source).toString()), true)
-        }
+        prepare(testSong(2).copy(previewUrl = Uri.fromFile(source).toString()), true)
         withTimeout(5.seconds) { player.state.first { it.playing } }
         assertFalse(player.state.value.failed)
         assertEquals(2L, player.state.value.song!!.id)
     }
 
     @Test fun playResumesWithoutResettingPositionAndIsIdempotent() = runBlocking<Unit> {
+        prepare(testSong().copy(previewUrl = Uri.fromFile(source).toString()), false)
         instrumentation.runOnMainSync {
-            player.prepare(testSong().copy(previewUrl = Uri.fromFile(source).toString()), false)
             player.play()
             player.play()
         }
@@ -95,9 +100,7 @@ class Media3PreviewPlayerTest {
     @Test fun playRetriesTheSamePreviewAfterAFailure() = runBlocking<Unit> {
         val recoveredSource = File(source.parentFile, "recovered-preview-${System.nanoTime()}.wav")
         try {
-            instrumentation.runOnMainSync {
-                player.prepare(testSong().copy(previewUrl = Uri.fromFile(recoveredSource).toString()), true)
-            }
+            prepare(testSong().copy(previewUrl = Uri.fromFile(recoveredSource).toString()), true)
             withTimeout(15.seconds) { player.state.first { it.failed } }
             source.copyTo(recoveredSource, overwrite = true)
             instrumentation.runOnMainSync { player.play() }

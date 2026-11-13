@@ -43,6 +43,8 @@
     <string name="view_album">Ver álbum</string>
     <string name="album_unavailable">As informações do álbum não estão disponíveis.</string>
     <string name="album">Álbum</string>
+    <string name="albums">Álbuns</string>
+    <string name="media_unavailable">Este item não está mais disponível.</string>
     <string name="view_itunes">Ver no iTunes</string>
     <string name="itunes_attribution">Prévia fornecida pelo iTunes</string>
     <string name="nothing_playing">Escolha uma música para começar a ouvir</string>

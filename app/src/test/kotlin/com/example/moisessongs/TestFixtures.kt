@@ -62,9 +62,12 @@ class FakeCatalog : SongCatalog {
 class FakePlayer : PreviewPlayer {
     val mutableState = MutableStateFlow(PlaybackState())
     override val state = mutableState.asStateFlow()
+    private val mutableQueue = MutableStateFlow<List<Song>>(emptyList())
+    override val queue = mutableQueue.asStateFlow()
     val preparations = mutableListOf<Pair<Song, Boolean>>()
     var released = false
-    override fun prepare(song: Song, autoPlay: Boolean) {
+    override fun prepare(song: Song, autoPlay: Boolean, queue: List<Song>) {
+        mutableQueue.value = queue
         preparations += song to autoPlay
         mutableState.value = PlaybackState(song = song)
     }
