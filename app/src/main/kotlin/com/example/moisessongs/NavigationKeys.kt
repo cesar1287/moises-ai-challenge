@@ -7,3 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object Songs : NavKey
 @Serializable data object Player : NavKey
 @Serializable data class AlbumRoute(val id: Long) : NavKey
+
+internal object NavigationActions {
+    const val SHOW_PLAYER = "com.example.moisessongs.action.SHOW_PLAYER"
+}

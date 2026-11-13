@@ -5,6 +5,7 @@ internal object SavedStateKeys {
     const val SEARCH_INPUT = "input"
     const val SEARCH_QUERY = "query"
     const val SELECTED_SONG_ID = "songId"
+    const val PENDING_PLAYER_REQUEST = "pendingPlayerRequest"
 }
 
 internal object UiTestTags {

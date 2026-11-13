@@ -34,7 +34,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 
 @Composable
-fun MainNavigation(repository: SongRepository, player: PlayerViewModel, modifier: Modifier = Modifier) {
+fun MainNavigation(repository: SongRepository, player: PlayerViewModel, modifier: Modifier = Modifier,
+    openPlayer: Boolean = false, onPlayerOpened: () -> Unit = {}) {
     val context = LocalContext.current
     val backStack = rememberNavBackStack(Splash)
     ReportDrawnWhen { backStack.firstOrNull() != Splash }
@@ -48,6 +49,13 @@ fun MainNavigation(repository: SongRepository, player: PlayerViewModel, modifier
     val goBack: () -> Unit = { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) }
     val openSong: (Song, List<Song>) -> Unit = { song, songs -> player.select(song, songs); navigate(Player) }
     val openOptions: (Song) -> Unit = { song -> optionsSong = song; optionsId = song.id }
+    LaunchedEffect(openPlayer, backStack.firstOrNull()) {
+        if (openPlayer && backStack.firstOrNull() != Splash) {
+            optionsId = null
+            navigate(Player)
+            onPlayerOpened()
+        }
+    }
     LaunchedEffect(optionsId) {
         val id = optionsId
         if (id == null) optionsSong = null

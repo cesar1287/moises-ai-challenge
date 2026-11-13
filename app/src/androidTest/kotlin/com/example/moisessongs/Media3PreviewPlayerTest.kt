@@ -2,6 +2,7 @@ package com.example.moisessongs
 
 import android.net.Uri
 import android.content.Intent
+import android.content.ComponentName
 import androidx.activity.ComponentActivity
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -10,8 +11,12 @@ import com.example.moisessongs.data.playback.Media3PreviewPlayer
 import com.example.moisessongs.data.playback.PlaybackService
 import com.example.moisessongs.data.local.toEntity
 import com.example.moisessongs.domain.Song
+import androidx.media3.common.Player
+import androidx.media3.session.MediaBrowser
+import androidx.media3.session.SessionToken
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.guava.await
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -19,17 +24,27 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
 class Media3PreviewPlayerTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var player: Media3PreviewPlayer
+    private lateinit var browser: MediaBrowser
     private lateinit var activity: ActivityScenario<ComponentActivity>
     private lateinit var source: File
     private val application get() = instrumentation.targetContext.applicationContext as InstrumentedSongsApplication
 
-    @Before fun setup() {
+    @Before fun setup() = runBlocking<Unit> {
+        browser = withContext(Dispatchers.Main) {
+            MediaBrowser.Builder(instrumentation.targetContext,
+                SessionToken(instrumentation.targetContext, ComponentName(instrumentation.targetContext, PlaybackService::class.java)))
+                .buildAsync().await()
+        }
+        // A system media client can keep the service bound between tests; reset its shared player.
+        instrumentation.runOnMainSync { browser.stop(); browser.clearMediaItems(); browser.repeatMode = Player.REPEAT_MODE_OFF }
+        instrumentation.waitForIdleSync()
         application.database.clearAllTables()
         activity = ActivityScenario.launch(ComponentActivity::class.java)
         source = File(instrumentation.targetContext.cacheDir, "test_tone.wav")
@@ -40,9 +55,9 @@ class Media3PreviewPlayerTest {
     }
 
     @After fun cleanup() {
-        instrumentation.runOnMainSync { player.pause() }
+        instrumentation.runOnMainSync { browser.stop(); browser.clearMediaItems() }
         instrumentation.waitForIdleSync()
-        instrumentation.runOnMainSync { player.release() }
+        instrumentation.runOnMainSync { player.release(); browser.release() }
         scope.cancel()
         instrumentation.targetContext.stopService(Intent(instrumentation.targetContext, PlaybackService::class.java))
         instrumentation.waitForIdleSync()
@@ -55,7 +70,7 @@ class Media3PreviewPlayerTest {
         instrumentation.runOnMainSync { player.prepare(song, autoPlay) }
     }
 
-    @Test fun playableDurationSeekingAndPausingUseTheActualPreview() = runBlocking {
+    @Test fun playableDurationSeekingAndPausingUseTheActualPreview() = runBlocking<Unit> {
         prepare(testSong().copy(previewUrl = Uri.fromFile(source).toString()), true)
         val started = withTimeout(15.seconds) { player.state.first { it.playing && it.durationMs > 0 } }
         assertEquals(2000L, started.durationMs)
@@ -64,7 +79,7 @@ class Media3PreviewPlayerTest {
         val paused = withTimeout(5.seconds) { player.state.first { !it.playing && !it.buffering && it.positionMs >= 1400 } }
         assertFalse(paused.buffering)
         instrumentation.runOnMainSync { player.toggleRepeat() }
-        assertTrue(player.state.value.repeat)
+        withTimeout(5.seconds) { player.state.first { it.repeat } }
     }
 
     @Test fun completionStopsPlaybackAndToggleRestartsThePreview() = runBlocking {
@@ -108,5 +123,33 @@ class Media3PreviewPlayerTest {
             instrumentation.runOnMainSync { player.play() }
             withTimeout(5.seconds) { player.state.first { it.playing && !it.failed } }
         } finally { recoveredSource.delete() }
+    }
+
+    @Test fun unavailablePreviewKeepsItsMetadataAndStopsThePreviousSong() = runBlocking<Unit> {
+        prepare(testSong().copy(previewUrl = Uri.fromFile(source).toString()), true)
+        withTimeout(15.seconds) { player.state.first { it.playing } }
+        val unavailable = testSong(2).copy(title = "Unavailable preview", previewUrl = null)
+        prepare(unavailable, true)
+        // Allow the controller and service callbacks to settle after stopping the old item.
+        delay(500.milliseconds)
+        assertEquals(unavailable, player.state.value.song)
+        assertFalse(player.state.value.playing)
+        assertFalse(player.state.value.buffering)
+        assertEquals(0L, player.state.value.durationMs)
+    }
+
+    @Test fun rapidSelectionsKeepTheLastSongAfterServiceCallbacksSettle() = runBlocking<Unit> {
+        val first = testSong().copy(previewUrl = Uri.fromFile(source).toString())
+        val last = testSong(2).copy(previewUrl = Uri.fromFile(source).toString())
+        application.database.songs().putSongs(listOf(first.toEntity(), last.toEntity()))
+        instrumentation.runOnMainSync {
+            repeat(5) { player.prepare(first, true); player.prepare(last, true) }
+            player.pause()
+        }
+        withTimeout(15.seconds) { player.state.first { it.song?.id == last.id && !it.buffering && it.durationMs > 0 } }
+        delay(500.milliseconds)
+        assertEquals(last.id, player.state.value.song?.id)
+        assertFalse(player.state.value.failed)
+        assertFalse(player.state.value.playing)
     }
 }

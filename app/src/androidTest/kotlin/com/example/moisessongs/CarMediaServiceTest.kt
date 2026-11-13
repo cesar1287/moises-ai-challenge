@@ -7,6 +7,12 @@ import android.media.session.MediaController as LegacyController
 import android.net.Uri
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -35,6 +41,7 @@ import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
+import org.junit.Rule
 import org.junit.runner.RunWith
 import java.io.File
 import java.io.IOException
@@ -46,6 +53,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @RunWith(AndroidJUnit4::class)
 class CarMediaServiceTest {
+    @get:Rule val compose = createEmptyComposeRule()
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context get() = instrumentation.targetContext
     private val application get() = context.applicationContext as InstrumentedSongsApplication
@@ -226,6 +234,46 @@ class CarMediaServiceTest {
             }
             awaitBrowser { it.isPlaying && it.currentMediaItem?.mediaId == MediaIds.song(first.id) }
         } finally { withContext(Dispatchers.Main) { legacy.disconnect() } }
+    }
+
+    @Test fun notificationReturnsToThePlayerWithoutRestartingPlaybackOrReplayingAfterRotation() = runBlocking<Unit> {
+        withContext(Dispatchers.Main) {
+            browser.setMediaItem(MediaItem.Builder().setMediaId(MediaIds.song(first.id)).build())
+            browser.prepare()
+        }
+        awaitBrowser { it.playbackState == Player.STATE_READY }
+        withContext(Dispatchers.Main) { browser.seekTo(5_000) }
+        awaitBrowser { it.currentPosition >= 4_900 }
+        val notification = withContext(Dispatchers.Main) { requireNotNull(browser.sessionActivity) }
+        notification.send()
+        awaitPlayerScreen()
+        assertEquals(first.id, MediaIds.songId(withContext(Dispatchers.Main) { browser.currentMediaItem!!.mediaId }))
+        assertFalse(withContext(Dispatchers.Main) { browser.isPlaying })
+        assertTrue(withContext(Dispatchers.Main) { browser.currentPosition >= 4_900 })
+        compose.onNodeWithContentDescription(context.getString(R.string.back)).performClick()
+        compose.onNodeWithText(context.getString(R.string.songs)).assertIsDisplayed()
+        activity!!.recreate()
+        compose.onNodeWithText(context.getString(R.string.songs)).assertIsDisplayed()
+        notification.send()
+        awaitPlayerScreen()
+    }
+
+    @Test fun notificationLaunchOpensThePlayerAfterSplashOnAFreshActivity() = runBlocking<Unit> {
+        withContext(Dispatchers.Main) {
+            browser.setMediaItem(MediaItem.Builder().setMediaId(MediaIds.song(first.id)).build())
+            browser.prepare()
+        }
+        awaitBrowser { it.playbackState == Player.STATE_READY }
+        activity!!.close()
+        activity = ActivityScenario.launch(Intent(context, MainActivity::class.java).setAction(NavigationActions.SHOW_PLAYER))
+        awaitPlayerScreen()
+        compose.onNodeWithText(first.title).assertIsDisplayed()
+    }
+
+    private fun awaitPlayerScreen() {
+        val title = context.getString(R.string.now_playing)
+        compose.waitUntil(5_000) { compose.onAllNodesWithText(title).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText(title).assertIsDisplayed()
     }
 
     private suspend fun children(id: String, page: Int = 0, pageSize: Int = 100) = withContext(Dispatchers.Main) {

@@ -14,6 +14,7 @@ import androidx.media3.session.CommandButton
 import androidx.media3.session.SessionCommand
 import com.example.moisessongs.DependenciesOwner
 import com.example.moisessongs.MainActivity
+import com.example.moisessongs.NavigationActions
 import com.example.moisessongs.R
 import com.example.moisessongs.domain.SongRepository
 import com.example.moisessongs.domain.library.MediaIds
@@ -45,7 +46,10 @@ class PlaybackService : MediaLibraryService() {
             .setWakeMode(C.WAKE_MODE_LOCAL)
             .build()
         engine = player
-        val activity = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java),
+        val activity = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java).apply {
+            action = NavigationActions.SHOW_PLAYER
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        },
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         session = MediaLibrarySession.Builder(this, player, SongLibraryCallback(this, repository, scope))
             .setSessionActivity(activity).build()
