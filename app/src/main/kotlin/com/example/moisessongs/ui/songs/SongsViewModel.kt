@@ -7,16 +7,17 @@ import com.example.moisessongs.domain.SearchPolicy
 import com.example.moisessongs.domain.SearchSnapshot
 import com.example.moisessongs.domain.Song
 import com.example.moisessongs.domain.SongRepository
+import com.example.moisessongs.ui.common.SavedStateKeys
 import com.example.moisessongs.ui.common.UiFailure
 import com.example.moisessongs.ui.common.toUiFailure
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 data class SongsUiState(
@@ -36,7 +37,7 @@ class SongsViewModel(
     private val repository: SongRepository,
     private val savedState: SavedStateHandle,
 ) : ViewModel() {
-    private val mutableState = MutableStateFlow(SongsUiState(input = savedState["input"] ?: ""))
+    private val mutableState = MutableStateFlow(SongsUiState(input = savedState[SavedStateKeys.SEARCH_INPUT] ?: ""))
     val state = mutableState.asStateFlow()
     private var observation: Job? = null
     private var request: Job? = null
@@ -45,7 +46,7 @@ class SongsViewModel(
 
     init {
         observeRecentSongs()
-        val restored = savedState.get<String>("query").orEmpty()
+        val restored = savedState.get<String>(SavedStateKeys.SEARCH_QUERY).orEmpty()
         if (restored.isNotBlank()) {
             val editedInput = state.value.input
             search(restored)
@@ -70,7 +71,7 @@ class SongsViewModel(
     }
 
     fun editInput(value: String) {
-        savedState["input"] = value
+        savedState[SavedStateKeys.SEARCH_INPUT] = value
         mutableState.update { it.copy(input = value) }
         if (value.isBlank() && state.value.query.isNotBlank()) clearSearch()
     }
@@ -82,8 +83,8 @@ class SongsViewModel(
         if (query.isBlank()) { clearSearch(); return }
         observation?.cancel()
         request?.cancel()
-        savedState["query"] = query
-        savedState["input"] = value
+        savedState[SavedStateKeys.SEARCH_QUERY] = query
+        savedState[SavedStateKeys.SEARCH_INPUT] = value
         mutableState.update { it.copy(input = value, query = query, snapshot = null,
             loading = true, loadingMore = false, failure = null, appendFailed = false) }
         observation = viewModelScope.launch {
@@ -99,8 +100,8 @@ class SongsViewModel(
     fun clearSearch() {
         observation?.cancel()
         request?.cancel()
-        savedState["query"] = ""
-        savedState["input"] = ""
+        savedState[SavedStateKeys.SEARCH_QUERY] = ""
+        savedState[SavedStateKeys.SEARCH_INPUT] = ""
         mutableState.update { it.copy(input = "", query = "", snapshot = null,
             loading = false, loadingMore = false, failure = recentFailure, appendFailed = false) }
     }

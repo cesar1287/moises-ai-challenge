@@ -38,7 +38,7 @@ fun AlbumScreen(state: AlbumUiState, onBack: () -> Unit, onRefresh: () -> Unit, 
                     }
                     if (album == null && state.loading) item { LoadingState(stringResource(R.string.loading_album)) }
                     if (album != null) {
-                        item(key = "album_header") {
+                        item(key = ListItemKeys.ALBUM_HEADER) {
                             Column(Modifier.fillMaxWidth().padding(bottom = 48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                                 Artwork(album.artworkUrl, 120.dp, radius = 20.dp)
                                 Spacer(Modifier.height(16.dp))
@@ -49,7 +49,7 @@ fun AlbumScreen(state: AlbumUiState, onBack: () -> Unit, onRefresh: () -> Unit, 
                                     modifier = Modifier.padding(horizontal = 24.dp))
                             }
                         }
-                        items(album.songs, key = Song::id, contentType = { "song" }) { song -> SongRow(song, { onSong(song) }, compact = true) }
+                        items(album.songs, key = Song::id, contentType = { ListContentTypes.SONG }) { song -> SongRow(song, { onSong(song) }, compact = true) }
                         if (album.songs.isEmpty()) item { EmptyState(stringResource(R.string.no_results), stringResource(R.string.album_unavailable)) }
                     }
                 }

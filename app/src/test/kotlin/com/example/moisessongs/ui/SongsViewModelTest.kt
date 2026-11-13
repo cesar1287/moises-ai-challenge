@@ -5,23 +5,24 @@ import androidx.lifecycle.ViewModelStore
 import com.example.moisessongs.*
 import com.example.moisessongs.data.DefaultSongRepository
 import com.example.moisessongs.domain.CatalogSearch
-import com.example.moisessongs.domain.SearchSnapshot
-import com.example.moisessongs.domain.SongRepository
 import com.example.moisessongs.domain.DataFailure
 import com.example.moisessongs.domain.DataFailureException
-import kotlinx.coroutines.flow.flow
+import com.example.moisessongs.domain.SearchSnapshot
+import com.example.moisessongs.domain.SongRepository
+import com.example.moisessongs.ui.common.SavedStateKeys
 import com.example.moisessongs.ui.common.UiFailure
 import com.example.moisessongs.ui.songs.SongsViewModel
+import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
-import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SongsViewModelTest {
@@ -113,7 +114,7 @@ class SongsViewModelTest {
     @Test fun `restored query loads its persisted results and retains edited input`() = runTest {
         store.saveSearch("artist", SearchSnapshot(listOf(song()), 25))
         catalog.search = { _, _ -> awaitCancellation() }
-        val vm = model(SavedStateHandle(mapOf("query" to "Artist", "input" to "Artist edited")))
+        val vm = model(SavedStateHandle(mapOf(SavedStateKeys.SEARCH_QUERY to "Artist", SavedStateKeys.SEARCH_INPUT to "Artist edited")))
         runCurrent()
         assertEquals("Artist edited", vm.state.value.input)
         assertEquals("Artist", vm.state.value.query)

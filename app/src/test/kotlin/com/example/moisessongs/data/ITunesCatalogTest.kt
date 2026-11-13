@@ -2,9 +2,8 @@ package com.example.moisessongs.data
 
 import com.example.moisessongs.data.remote.ITunesApi
 import com.example.moisessongs.data.remote.ITunesCatalog
+import com.example.moisessongs.data.remote.ITunesConfig
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -21,8 +20,7 @@ class ITunesCatalogTest {
     @Before fun setup() {
         server.start()
         val api = Retrofit.Builder().baseUrl(server.url("/"))
-            .addConverterFactory(Json { ignoreUnknownKeys = true; coerceInputValues = true }
-                .asConverterFactory("application/json".toMediaType()))
+            .addConverterFactory(ITunesConfig.json.asConverterFactory(ITunesConfig.jsonMediaType))
             .build().create(ITunesApi::class.java)
         catalog = ITunesCatalog(api)
     }

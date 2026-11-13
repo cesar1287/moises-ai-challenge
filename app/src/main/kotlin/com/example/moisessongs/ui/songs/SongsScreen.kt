@@ -102,7 +102,7 @@ fun SongsScreen(
                             focus.clearFocus(); keyboard?.hide(); onSubmit(); searchExpanded = false
                         }),
                         modifier = Modifier.weight(1f).padding(vertical = 14.dp).focusRequester(focusRequester)
-                            .testTag("search_input").semantics { contentDescription = description },
+                            .testTag(UiTestTags.SEARCH_INPUT).semantics { contentDescription = description },
                         decorationBox = { field ->
                             Box {
                                 if (state.input.isEmpty()) Text(stringResource(R.string.search), color = MutedText,
@@ -117,34 +117,34 @@ fun SongsScreen(
             }
             PullToRefreshBox(isRefreshing = state.loading && state.songs.isNotEmpty(), onRefresh = onRefresh,
                 modifier = Modifier.weight(1f).fillMaxWidth()) {
-                LazyColumn(state = listState, modifier = Modifier.fillMaxSize().testTag("song_list").semantics {
+                LazyColumn(state = listState, modifier = Modifier.fillMaxSize().testTag(UiTestTags.SONG_LIST).semantics {
                     customActions = listOf(CustomAccessibilityAction(refreshDescription) { onRefresh(); true })
                 },
                     contentPadding = PaddingValues(bottom = 24.dp)) {
-                    if (state.failure != null) item(key = "failure") {
+                    if (state.failure != null) item(key = ListItemKeys.FAILURE) {
                         FailureBanner(state.failure,
                             savedLabel = if (state.songs.isNotEmpty()) stringResource(R.string.saved_results) else null,
                             onRetry = if (state.appendFailed) onLoadMore else onRefresh)
                     }
-                    if (state.query.isBlank() && state.recentSongs.isNotEmpty()) item(key = "recent_heading") {
+                    if (state.query.isBlank() && state.recentSongs.isNotEmpty()) item(key = ListItemKeys.RECENT_HEADING) {
                         Text(stringResource(R.string.recently_played), color = MutedText,
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp).semantics { heading() })
                     }
-                    if (state.query.isBlank() && state.recentSongs.isEmpty()) item(key = "welcome") {
+                    if (state.query.isBlank() && state.recentSongs.isEmpty()) item(key = ListItemKeys.WELCOME) {
                         EmptyState(stringResource(R.string.discover_title), stringResource(R.string.discover_body),
                             stringResource(R.string.try_search), onSuggestion)
                     }
-                    if (state.loading && state.songs.isEmpty()) item(key = "loading") {
+                    if (state.loading && state.songs.isEmpty()) item(key = ListItemKeys.LOADING) {
                         LoadingState(stringResource(R.string.loading))
                     }
                     if (state.query.isNotBlank() && !state.loading && state.snapshot != null && state.songs.isEmpty()) {
-                        item(key = "empty") { EmptyState(stringResource(R.string.no_results), stringResource(R.string.no_results_body)) }
+                        item(key = ListItemKeys.EMPTY) { EmptyState(stringResource(R.string.no_results), stringResource(R.string.no_results_body)) }
                     }
-                    items(state.songs, key = Song::id, contentType = { "song" }) { song ->
+                    items(state.songs, key = Song::id, contentType = { ListContentTypes.SONG }) { song ->
                         SongRow(song, onClick = { onSong(song) }, onOptions = { onOptions(song) })
                     }
-                    if (state.query.isNotBlank() && state.songs.isNotEmpty()) item(key = "pagination") {
+                    if (state.query.isNotBlank() && state.songs.isNotEmpty()) item(key = ListItemKeys.PAGINATION) {
                         when {
                             state.loadingMore -> LoadingState(stringResource(R.string.loading))
                             state.snapshot?.endReached == true -> Text(

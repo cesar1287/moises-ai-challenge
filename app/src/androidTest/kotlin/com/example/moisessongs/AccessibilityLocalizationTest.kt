@@ -4,8 +4,8 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.text.intl.LocaleList
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.LayoutDirection
@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SdkSuppress
 import com.example.moisessongs.domain.playback.PlaybackState
+import com.example.moisessongs.ui.common.UiTestTags
 import com.example.moisessongs.ui.player.PlayerScreen
 import com.example.moisessongs.ui.songs.SongsScreen
 import com.example.moisessongs.ui.songs.SongsUiState
@@ -80,7 +81,7 @@ class AccessibilityLocalizationTest {
             }
         }
         rule.onNodeWithText("Músicas").assertIsDisplayed()
-        val actions = rule.onNodeWithTag("song_list").fetchSemanticsNode().config[SemanticsActions.CustomActions]
+        val actions = rule.onNodeWithTag(UiTestTags.SONG_LIST).fetchSemanticsNode().config[SemanticsActions.CustomActions]
         rule.runOnIdle {
             assertTrue(actions.single { it.label == "Atualizar músicas" }.action())
         }

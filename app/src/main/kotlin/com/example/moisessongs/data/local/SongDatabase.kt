@@ -71,7 +71,7 @@ interface SongDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertMissingSong(song: SongEntity)
 
-    @Query("SELECT q.query AS cache_query, q.requestedLimit AS cache_requestedLimit, q.endReached AS cache_endReached, q.updatedAt AS cache_updatedAt, s.* FROM searches q LEFT JOIN search_results r ON q.query = r.query LEFT JOIN songs s ON s.id = r.songId WHERE q.query = :query ORDER BY r.position")
+    @Query("SELECT q.`query` AS cache_query, q.requestedLimit AS cache_requestedLimit, q.endReached AS cache_endReached, q.updatedAt AS cache_updatedAt, s.* FROM searches q LEFT JOIN search_results r ON q.`query` = r.`query` LEFT JOIN songs s ON s.id = r.songId WHERE q.`query` = :query ORDER BY r.position")
     fun observeSearchRows(query: String): Flow<List<SearchRow>>
 
     @Query("SELECT a.id AS album_id, a.title AS album_title, a.artist AS album_artist, a.artworkUrl AS album_artworkUrl, a.releaseDate AS album_releaseDate, a.genre AS album_genre, a.trackCount AS album_trackCount, a.storeUrl AS album_storeUrl, s.* FROM albums a LEFT JOIN album_tracks t ON a.id = t.albumId LEFT JOIN songs s ON s.id = t.songId WHERE a.id = :id ORDER BY t.position")
@@ -82,10 +82,10 @@ interface SongDao {
     @Query("SELECT * FROM songs WHERE id = :id")
     suspend fun getSong(id: Long): SongEntity?
 
-    @Query("SELECT * FROM searches WHERE query = :query")
+    @Query("SELECT * FROM searches WHERE `query` = :query")
     suspend fun getSearch(query: String): SearchEntity?
 
-    @Query("SELECT s.* FROM songs s INNER JOIN search_results r ON s.id = r.songId WHERE r.query = :query ORDER BY r.position")
+    @Query("SELECT s.* FROM songs s INNER JOIN search_results r ON s.id = r.songId WHERE r.`query` = :query ORDER BY r.position")
     suspend fun getSearchSongs(query: String): List<SongEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -94,7 +94,7 @@ interface SongDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun putSearchResults(results: List<SearchResultEntity>)
 
-    @Query("DELETE FROM search_results WHERE query = :query")
+    @Query("DELETE FROM search_results WHERE `query` = :query")
     suspend fun clearSearchResults(query: String)
 
     @Query("SELECT s.* FROM songs s INNER JOIN recent_plays r ON s.id = r.songId ORDER BY r.playedAt DESC, r.songId DESC LIMIT 20")

@@ -2,7 +2,6 @@ package com.example.moisessongs.data
 
 import com.example.moisessongs.*
 import com.example.moisessongs.domain.CatalogSearch
-import com.example.moisessongs.domain.SearchSnapshot
 import com.example.moisessongs.domain.DataFailure
 import com.example.moisessongs.domain.DataFailureException
 import kotlinx.coroutines.CancellationException

@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelStore
 import com.example.moisessongs.*
 import com.example.moisessongs.data.DefaultSongRepository
+import com.example.moisessongs.ui.common.SavedStateKeys
 import com.example.moisessongs.ui.player.PlayerViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -60,7 +61,7 @@ class PlayerViewModelTest {
 
     @Test fun `restored selection never autoplays and explicit selection wins a restore race`() = runTest {
         store.recordPlayed(song(1), 1)
-        val vm = model(SavedStateHandle(mapOf("songId" to 1L)))
+        val vm = model(SavedStateHandle(mapOf(SavedStateKeys.SELECTED_SONG_ID to 1L)))
         vm.select(song(2), listOf(song(2)))
         runCurrent()
         assertEquals(2L, vm.playback.value.song!!.id)
@@ -69,7 +70,7 @@ class PlayerViewModelTest {
 
     @Test fun `restored song is paused and player is released with the view model`() = runTest {
         store.recordPlayed(song(), 1)
-        val vm = model(SavedStateHandle(mapOf("songId" to 1L)))
+        val vm = model(SavedStateHandle(mapOf(SavedStateKeys.SELECTED_SONG_ID to 1L)))
         runCurrent()
         assertEquals(song(), vm.playback.value.song)
         assertFalse(player.preparations.single().second)

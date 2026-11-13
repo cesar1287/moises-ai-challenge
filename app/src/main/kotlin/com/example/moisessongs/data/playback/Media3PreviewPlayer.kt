@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class Media3PreviewPlayer(context: Context, private val scope: CoroutineScope) : PreviewPlayer {
     private val application = context.applicationContext
@@ -37,7 +38,7 @@ class Media3PreviewPlayer(context: Context, private val scope: CoroutineScope) :
                     updateState(player)
                     if (player.isPlaying && ticker?.isActive != true) {
                         ticker = scope.launch {
-                            while (isActive && player.isPlaying) { updateState(player); delay(250) }
+                            while (isActive && player.isPlaying) { updateState(player); delay(250.milliseconds) }
                         }
                     } else if (!player.isPlaying) ticker?.cancel()
                 }

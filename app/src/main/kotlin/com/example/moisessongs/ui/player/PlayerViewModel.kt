@@ -5,16 +5,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.moisessongs.domain.Song
 import com.example.moisessongs.domain.SongRepository
-import com.example.moisessongs.domain.playback.PreviewPlayer
 import com.example.moisessongs.domain.playback.PlaybackProgress
 import com.example.moisessongs.domain.playback.PlaybackQueue
+import com.example.moisessongs.domain.playback.PreviewPlayer
+import com.example.moisessongs.ui.common.SavedStateKeys
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class PlayerViewModel(
@@ -37,7 +38,7 @@ class PlayerViewModel(
 
     init {
         viewModelScope.launch {
-            val id = savedState.get<Long>("songId")
+            val id = savedState.get<Long>(SavedStateKeys.SELECTED_SONG_ID)
             val song = try { id?.let { repository.getSong(it) } }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { null }
@@ -69,7 +70,7 @@ class PlayerViewModel(
     fun select(song: Song, queue: List<Song>) {
         restorePending = false
         mutableQueue.value = PlaybackQueue.startingWith(song, queue).songs
-        savedState["songId"] = song.id
+        savedState[SavedStateKeys.SELECTED_SONG_ID] = song.id
         if (playback.value.song?.id != song.id) player.prepare(song, autoPlay = true)
     }
 
@@ -78,7 +79,7 @@ class PlayerViewModel(
     private fun skip(direction: Int) {
         val current = playback.value.song ?: return
         PlaybackQueue.startingWith(current, queue.value).adjacent(current.id, direction)?.let { song ->
-            savedState["songId"] = song.id
+            savedState[SavedStateKeys.SELECTED_SONG_ID] = song.id
             player.prepare(song, autoPlay = true)
         }
     }
