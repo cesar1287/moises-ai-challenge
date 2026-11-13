@@ -117,6 +117,9 @@ class Media3PreviewPlayerTest {
     @Test fun playRetriesTheSamePreviewAfterAFailure() = runBlocking<Unit> {
         val recoveredSource = File(source.parentFile, "recovered-preview-${System.nanoTime()}.wav")
         try {
+            // A malformed source fails immediately, without the missing-file retry backoff.
+            // Missing-file errors are covered separately by playbackFailureIsVisibleAndSelectingAnotherSongRecovers.
+            recoveredSource.writeText("Invalid audio fixture")
             prepare(testSong().copy(previewUrl = Uri.fromFile(recoveredSource).toString()), true)
             withTimeout(15.seconds) { player.state.first { it.failed } }
             source.copyTo(recoveredSource, overwrite = true)

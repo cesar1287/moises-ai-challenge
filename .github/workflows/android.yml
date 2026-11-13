@@ -90,7 +90,11 @@ jobs:
           emulator-boot-timeout: 180
           disable-animations: true
           emulator-options: -no-window -gpu software -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -accel on
-          script: ./gradlew :app:connectedDebugAndroidTest --stacktrace
+          # The device suite uses local catalog/audio fixtures; avoid background Google downloads.
+          script: |
+            adb shell svc wifi disable
+            adb shell svc data disable
+            ./gradlew :app:connectedDebugAndroidTest --stacktrace
       - name: Upload device test reports
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
