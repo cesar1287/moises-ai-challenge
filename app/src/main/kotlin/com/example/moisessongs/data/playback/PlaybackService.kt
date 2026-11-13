@@ -107,6 +107,7 @@ class PlaybackService : MediaLibraryService() {
 
     override fun onDestroy() {
         scope.cancel()
+        revokeUriPermission(ArtworkUris.root(this), Intent.FLAG_GRANT_READ_URI_PERMISSION)
         session?.release()
         session = null
         engine?.release()

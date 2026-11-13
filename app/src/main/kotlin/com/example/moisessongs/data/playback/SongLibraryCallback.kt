@@ -1,6 +1,7 @@
 package com.example.moisessongs.data.playback
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -38,12 +39,18 @@ internal class SongLibraryCallback(
     private companion object { const val MAX_QUERY_LENGTH = 200 }
     private val library = MediaLibrary(repository)
 
-    override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult =
-        if (controller.packageName == context.packageName || controller.isTrusted)
-            MediaSession.ConnectionResult.AcceptedResultBuilder(session)
-                .setAvailableSessionCommands(MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS.buildUpon()
-                    .add(SessionCommand(SessionKeys.TOGGLE_REPEAT, Bundle.EMPTY)).build()).build()
-        else MediaSession.ConnectionResult.reject()
+    override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult {
+        if (controller.packageName != context.packageName && !controller.isTrusted) {
+            return MediaSession.ConnectionResult.reject()
+        }
+        if (controller.packageName != context.packageName) {
+            context.grantUriPermission(controller.packageName, ArtworkUris.root(context),
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION)
+        }
+        return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+            .setAvailableSessionCommands(MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS.buildUpon()
+                .add(SessionCommand(SessionKeys.TOGGLE_REPEAT, Bundle.EMPTY)).build()).build()
+    }
 
     override fun onCustomCommand(session: MediaSession, controller: MediaSession.ControllerInfo,
         customCommand: SessionCommand, args: Bundle): ListenableFuture<SessionResult> {
@@ -61,19 +68,19 @@ internal class SongLibraryCallback(
             putInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_BROWSABLE, MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM)
             putInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_PLAYABLE, MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM)
         }
-        return Futures.immediateFuture(LibraryResult.ofItem(libraryFolder(MediaIds.ROOT, context.getString(R.string.songs)),
+        return Futures.immediateFuture(LibraryResult.ofItem(libraryFolder(context, MediaIds.ROOT, context.getString(R.string.songs)),
             LibraryParams.Builder().setExtras(hints).build()))
     }
 
     override fun onGetItem(session: MediaLibrarySession, browser: MediaSession.ControllerInfo,
         mediaId: String): ListenableFuture<LibraryResult<MediaItem>> = result {
         val item = when (mediaId) {
-            MediaIds.ROOT -> libraryFolder(mediaId, context.getString(R.string.songs))
-            MediaIds.RECENT -> libraryFolder(mediaId, context.getString(R.string.recently_played))
-            MediaIds.ALBUMS -> libraryFolder(mediaId, context.getString(R.string.albums))
-            else -> MediaIds.songId(mediaId)?.let { library.song(it).toMediaItem() }
+            MediaIds.ROOT -> libraryFolder(context, mediaId, context.getString(R.string.songs))
+            MediaIds.RECENT -> libraryFolder(context, mediaId, context.getString(R.string.recently_played))
+            MediaIds.ALBUMS -> libraryFolder(context, mediaId, context.getString(R.string.albums))
+            else -> MediaIds.songId(mediaId)?.let { library.song(it).toMediaItem(context) }
                 ?: MediaIds.albumId(mediaId)?.let { id -> library.album(id).let {
-                    libraryFolder(mediaId, it.title, it.artworkUrl, it.artist)
+                    libraryFolder(context, mediaId, it.title, it.artworkUrl, it.artist)
                 } } ?: throw IllegalArgumentException("Unknown media ID")
         }
         LibraryResult.ofItem(item, null)
@@ -82,14 +89,14 @@ internal class SongLibraryCallback(
     override fun onGetChildren(session: MediaLibrarySession, browser: MediaSession.ControllerInfo,
         parentId: String, page: Int, pageSize: Int, params: LibraryParams?): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> = result {
         val items = when (parentId) {
-            MediaIds.ROOT -> listOf(libraryFolder(MediaIds.RECENT, context.getString(R.string.recently_played)),
-                libraryFolder(MediaIds.ALBUMS, context.getString(R.string.albums)))
-            MediaIds.RECENT -> library.recent().filter { it.previewUrl != null }.map { it.toMediaItem() }
+            MediaIds.ROOT -> listOf(libraryFolder(context, MediaIds.RECENT, context.getString(R.string.recently_played)),
+                libraryFolder(context, MediaIds.ALBUMS, context.getString(R.string.albums)))
+            MediaIds.RECENT -> library.recent().filter { it.previewUrl != null }.map { it.toMediaItem(context) }
             MediaIds.ALBUMS -> library.albums().map {
-                libraryFolder(MediaIds.album(requireNotNull(it.albumId)), it.album, it.artworkUrl, it.artist)
+                libraryFolder(context, MediaIds.album(requireNotNull(it.albumId)), it.album, it.artworkUrl, it.artist)
             }
             else -> library.album(requireNotNull(MediaIds.albumId(parentId))).songs
-                .filter { it.previewUrl != null }.map { it.toMediaItem() }
+                .filter { it.previewUrl != null }.map { it.toMediaItem(context) }
         }
         LibraryResult.ofItemList(items.libraryPage(page, pageSize), params)
     }
@@ -106,7 +113,7 @@ internal class SongLibraryCallback(
 
     override fun onGetSearchResult(session: MediaLibrarySession, browser: MediaSession.ControllerInfo,
         query: String, page: Int, pageSize: Int, params: LibraryParams?): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> = result {
-        LibraryResult.ofItemList(library.searchResults(query).libraryPage(page, pageSize).map { it.toMediaItem() }, params)
+        LibraryResult.ofItemList(library.searchResults(query).libraryPage(page, pageSize).map { it.toMediaItem(context) }, params)
     }
 
     override fun onAddMediaItems(mediaSession: MediaSession, controller: MediaSession.ControllerInfo,
@@ -115,7 +122,7 @@ internal class SongLibraryCallback(
         mediaItems.map { item ->
             val song = library.song(requireNotNull(MediaIds.songId(item.mediaId)))
             require(song.previewUrl != null) { context.getString(R.string.preview_unavailable) }
-            song.toMediaItem()
+            song.toMediaItem(context)
         }
     }
 
@@ -136,7 +143,7 @@ internal class SongLibraryCallback(
             require(songs.isNotEmpty()) { context.getString(R.string.preview_unavailable) }
             val index = if (songId == null) 0 else songs.indexOfFirst { it.id == songId }
             require(index >= 0)
-            MediaSession.MediaItemsWithStartPosition(songs.map { it.toMediaItem() }, index,
+            MediaSession.MediaItemsWithStartPosition(songs.map { it.toMediaItem(context) }, index,
                 if (startPositionMs == C.TIME_UNSET) 0 else startPositionMs.coerceAtLeast(0))
         } else {
             val items = onAddMediaItems(mediaSession, controller, mediaItems).await()

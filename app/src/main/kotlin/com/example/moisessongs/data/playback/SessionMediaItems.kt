@@ -1,7 +1,7 @@
 package com.example.moisessongs.data.playback
 
 import android.os.Bundle
-import androidx.core.net.toUri
+import android.content.Context
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.example.moisessongs.domain.Song
@@ -14,6 +14,7 @@ internal object SessionKeys {
     const val HISTORY_FAILED = "history_failed"
     const val ALBUM_ID = "album_id"
     const val PREVIEW_URL = "preview_url"
+    const val ARTWORK_URL = "artwork_url"
     const val STORE_URL = "store_url"
     const val CATALOG_DURATION = "catalog_duration"
     const val DISC_NUMBER = "disc_number"
@@ -23,12 +24,12 @@ internal object SessionKeys {
     const val EXPLICIT = "explicit"
 }
 
-internal fun Song.toMediaItem(): MediaItem = MediaItem.Builder()
+internal fun Song.toMediaItem(context: Context): MediaItem = MediaItem.Builder()
     .setMediaId(MediaIds.song(id))
     .setUri(previewUrl)
     .setMediaMetadata(MediaMetadata.Builder()
         .setTitle(title).setArtist(artist).setSubtitle(artist).setAlbumTitle(album).setDescription(album)
-        .setArtworkUri(artworkUrl?.toUri())
+        .setArtworkUri(artworkUrl?.let { ArtworkUris.song(context, id) })
         .setIsBrowsable(false).setIsPlayable(previewUrl != null)
         .setExtras(Bundle().apply {
             albumId?.let {
@@ -36,6 +37,7 @@ internal fun Song.toMediaItem(): MediaItem = MediaItem.Builder()
                 putString(SessionKeys.ALBUM_LINK, MediaIds.album(it))
             }
             putString(SessionKeys.PREVIEW_URL, previewUrl)
+            putString(SessionKeys.ARTWORK_URL, artworkUrl)
             putString(SessionKeys.STORE_URL, storeUrl)
             putLong(SessionKeys.CATALOG_DURATION, durationMs)
             putInt(SessionKeys.DISC_NUMBER, discNumber)
@@ -52,14 +54,15 @@ internal fun MediaItem.toSong(): Song? {
     val extras = metadata.extras ?: Bundle.EMPTY
     return Song(id, metadata.title?.toString().orEmpty(), metadata.artist?.toString().orEmpty(),
         extras.takeIf { it.containsKey(SessionKeys.ALBUM_ID) }?.getLong(SessionKeys.ALBUM_ID),
-        metadata.albumTitle?.toString().orEmpty(), metadata.artworkUri?.toString(),
+        metadata.albumTitle?.toString().orEmpty(), extras.getString(SessionKeys.ARTWORK_URL),
         extras.getString(SessionKeys.PREVIEW_URL), extras.getString(SessionKeys.STORE_URL),
         extras.getLong(SessionKeys.CATALOG_DURATION), extras.getInt(SessionKeys.TRACK_NUMBER),
         extras.getInt(SessionKeys.DISC_NUMBER, 1), extras.getString(SessionKeys.GENRE).orEmpty(),
         extras.getString(SessionKeys.RELEASE_DATE).orEmpty(), extras.getBoolean(SessionKeys.EXPLICIT))
 }
 
-internal fun libraryFolder(id: String, title: String, artworkUrl: String? = null, artist: String? = null): MediaItem =
+internal fun libraryFolder(context: Context, id: String, title: String, artworkUrl: String? = null, artist: String? = null): MediaItem =
     MediaItem.Builder().setMediaId(id).setMediaMetadata(MediaMetadata.Builder()
-        .setTitle(title).setArtist(artist).setArtworkUri(artworkUrl?.toUri())
+        .setTitle(title).setArtist(artist)
+        .setArtworkUri(artworkUrl?.let { MediaIds.albumId(id)?.let { ArtworkUris.album(context, it) } })
         .setIsBrowsable(true).setIsPlayable(false).build()).build()

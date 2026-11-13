@@ -15,6 +15,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MoisesSongs.Starting">
         <meta-data android:name="com.google.android.gms.car.application" android:resource="@xml/automotive_app_desc" />
+        <provider
+            android:name=".data.playback.MediaArtworkProvider"
+            android:authorities="${applicationId}.artwork"
+            android:exported="false"
+            android:grantUriPermissions="true" />
         <!-- Car hosts bind externally; SongLibraryCallback accepts only this app or trusted controllers. -->
         <service
             android:name=".data.playback.PlaybackService"

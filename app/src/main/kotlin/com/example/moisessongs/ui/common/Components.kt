@@ -45,12 +45,10 @@ import java.util.Locale
 import coil3.compose.AsyncImage
 import com.example.moisessongs.R
 import com.example.moisessongs.domain.Song
+import com.example.moisessongs.domain.largeArtworkUrl
 import com.example.moisessongs.ui.theme.MutedText
 import com.example.moisessongs.ui.theme.SearchSurface
 import com.example.moisessongs.ui.theme.SecondaryText
-
-private val artworkHost = Regex("https://[^/]+\\.mzstatic\\.com/.*")
-private val artworkSize = Regex("/100x100bb\\.(jpg|png)$")
 
 @Composable
 fun FigmaIcon(@DrawableRes icon: Int, modifier: Modifier = Modifier, width: Dp = 24.dp,
@@ -71,8 +69,7 @@ fun AssetButton(@DrawableRes icon: Int, description: String, onClick: () -> Unit
 @Composable
 fun Artwork(url: String?, size: Dp, modifier: Modifier = Modifier, radius: Dp = 8.dp) {
     val largeUrl = remember(url, size) {
-        if (size >= 120.dp && url?.matches(artworkHost) == true)
-            url.replace(artworkSize, "/600x600bb.$1") else url
+        if (size >= 120.dp) largeArtworkUrl(url) else url
     }
     var useOriginal by remember(url, size) { mutableStateOf(false) }
     // CDN sizing is best-effort; retain the catalog's original URL as the fallback.

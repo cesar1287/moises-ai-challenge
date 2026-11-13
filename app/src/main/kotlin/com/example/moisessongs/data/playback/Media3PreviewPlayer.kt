@@ -29,6 +29,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 /** A phone-side controller; PlaybackService remains the only owner of the audio engine. */
 class Media3PreviewPlayer(context: Context, private val scope: CoroutineScope) : PreviewPlayer {
+    private val application = context.applicationContext
     private val mutableState = MutableStateFlow(PlaybackState())
     override val state = mutableState.asStateFlow()
     private val mutableQueue = MutableStateFlow<List<Song>>(emptyList())
@@ -90,7 +91,7 @@ class Media3PreviewPlayer(context: Context, private val scope: CoroutineScope) :
                 player.clearMediaItems()
             } else {
                 val playable = songs.filter { it.previewUrl != null }
-                player.setMediaItems(playable.map { it.toMediaItem() }, playable.indexOfFirst { it.id == song.id }, 0)
+                player.setMediaItems(playable.map { it.toMediaItem(application) }, playable.indexOfFirst { it.id == song.id }, 0)
                 player.prepare()
                 player.playWhenReady = autoPlay
             }

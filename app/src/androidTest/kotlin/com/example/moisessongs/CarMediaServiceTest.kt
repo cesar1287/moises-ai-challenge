@@ -5,6 +5,7 @@ import android.content.Intent
 import android.media.browse.MediaBrowser as LegacyBrowser
 import android.media.session.MediaController as LegacyController
 import android.net.Uri
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -22,6 +23,7 @@ import com.example.moisessongs.data.local.toEntity
 import com.example.moisessongs.data.playback.Media3PreviewPlayer
 import com.example.moisessongs.data.playback.PlaybackService
 import com.example.moisessongs.data.playback.SessionKeys
+import com.example.moisessongs.data.playback.ArtworkUris
 import com.example.moisessongs.domain.Album
 import com.example.moisessongs.domain.CatalogSearch
 import com.example.moisessongs.domain.Song
@@ -36,6 +38,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.io.IOException
+import java.io.FileNotFoundException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.time.Duration.Companion.milliseconds
@@ -97,6 +100,28 @@ class CarMediaServiceTest {
         assertEquals(listOf(MediaIds.song(first.id), MediaIds.song(second.id)), album.map { it.mediaId })
         assertEquals(MediaIds.album(10), album.first().mediaMetadata.extras!!.getString(SessionKeys.ALBUM_LINK))
         assertEquals(SessionError.ERROR_BAD_VALUE, children("unknown").resultCode)
+    }
+
+    @Test fun carArtworkUsesReadOnlyLocalUrisAndResolvesOnlyCachedArtwork() = runBlocking<Unit> {
+        val artwork = "android.resource://${context.packageName}/${R.drawable.musical_note}"
+        application.database.songs().putSongs(listOf(first.copy(artworkUrl = artwork).toEntity()))
+        repository.recordPlayed(first.copy(artworkUrl = artwork))
+        val item = children(MediaIds.RECENT).value!!.first()
+        assertEquals(ArtworkUris.song(context, first.id), item.mediaMetadata.artworkUri)
+        // Album covers work from listening history before the full album has been fetched.
+        for (uri in listOf(item.mediaMetadata.artworkUri!!, ArtworkUris.album(context, first.albumId!!))) {
+            val bytes = context.contentResolver.openInputStream(uri)!!.use { it.readBytes() }
+            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            assertNotNull(bitmap)
+            assertTrue(bitmap.width <= 600 && bitmap.height <= 600)
+            bitmap.recycle()
+        }
+        assertThrows(FileNotFoundException::class.java) {
+            context.contentResolver.openFileDescriptor(ArtworkUris.song(context, first.id), "w")
+        }
+        assertThrows(FileNotFoundException::class.java) {
+            context.contentResolver.openInputStream(ArtworkUris.root(context).buildUpon().appendPath("private-file").build())
+        }
     }
 
     @Test fun carAndPhoneSharePlaybackAndClosingThePhoneDoesNotStopTheCar() = runBlocking<Unit> {
