@@ -40,6 +40,8 @@ class Media3PreviewPlayerTest {
     }
 
     @After fun cleanup() {
+        instrumentation.runOnMainSync { player.pause() }
+        instrumentation.waitForIdleSync()
         instrumentation.runOnMainSync { player.release() }
         scope.cancel()
         instrumentation.targetContext.stopService(Intent(instrumentation.targetContext, PlaybackService::class.java))

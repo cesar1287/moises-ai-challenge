@@ -78,6 +78,9 @@ class CarMediaServiceTest {
     }
 
     @After fun cleanup() {
+        // Settle playback/notification work before tearing down the service for the next test.
+        instrumentation.runOnMainSync { browser.stop(); browser.clearMediaItems() }
+        instrumentation.waitForIdleSync()
         instrumentation.runOnMainSync { phone?.release(); browser.release() }
         phoneScope.cancel()
         activity?.close()
