@@ -13,7 +13,8 @@ android {
     applicationId = "com.example.moisessongs"
     minSdk = 26
     targetSdk = 36
-    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    testInstrumentationRunner = "com.example.moisessongs.SongsTestRunner"
+    testInstrumentationRunnerArguments["clearPackageData"] = "true"
     versionCode = 1
     versionName = "1.0"
   }
@@ -37,6 +38,10 @@ android {
     aidl = false
     buildConfig = false
     shaders = false
+  }
+  testOptions {
+    // Isolate application state and media-service bindings between device tests.
+    execution = "ANDROIDX_TEST_ORCHESTRATOR"
   }
   androidResources {
     generateLocaleConfig = true
@@ -71,6 +76,8 @@ dependencies {
   implementation(libs.retrofit.serialization)
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.media3.exoplayer)
+  implementation(libs.media3.session)
+  implementation(libs.kotlinx.coroutines.guava)
   implementation(libs.androidx.profileinstaller)
   implementation(libs.coil.compose)
   implementation(libs.coil.network)
@@ -110,6 +117,7 @@ dependencies {
   androidTestImplementation(libs.androidx.test.core)
   androidTestImplementation(libs.androidx.test.ext.junit)
   androidTestImplementation(libs.androidx.test.runner)
+  androidTestUtil(libs.androidx.test.orchestrator)
   androidTestImplementation(libs.androidx.test.espresso.core)
 
   // Navigation

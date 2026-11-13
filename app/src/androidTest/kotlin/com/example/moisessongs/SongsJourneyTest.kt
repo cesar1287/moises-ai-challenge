@@ -45,17 +45,28 @@ class SongsJourneyTest {
         rule.onNodeWithText("Get Lucky").assertIsDisplayed()
     }
 
+    private fun SemanticsNodeInteraction.assertReachable(): SemanticsNodeInteraction {
+        // Short displays scroll the player; navigation can also briefly expose outgoing content.
+        rule.waitUntil(5_000) {
+            runCatching {
+                if (!isDisplayed()) performScrollTo()
+                isDisplayed()
+            }.getOrDefault(false)
+        }
+        return assertIsDisplayed()
+    }
+
     @Test fun searchPlayerOptionsAlbumTrackAndBackFormACompleteJourney() {
         content()
         search()
         rule.onNodeWithText("Get Lucky").performClick()
         rule.onNodeWithText("Now playing").assertIsDisplayed()
-        rule.onNodeWithContentDescription("Preview timeline").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Preview timeline").assertReachable()
         rule.onNodeWithContentDescription("More options for Get Lucky").performClick()
         rule.onNodeWithText("View album").performClick()
-        rule.onNodeWithText("One More Time").assertIsDisplayed().performClick()
+        rule.onNodeWithText("One More Time").assertReachable().performClick()
         rule.onNodeWithText("Now playing").assertIsDisplayed()
-        rule.onNodeWithText("One More Time").assertIsDisplayed()
+        rule.onNodeWithText("One More Time").assertReachable()
         rule.onNodeWithContentDescription("Back").performClick()
         rule.onNodeWithText("Songs").assertIsDisplayed()
     }
@@ -135,7 +146,11 @@ private class JourneyRepository : SongRepository {
 
 private class JourneyPlayer : PreviewPlayer {
     override val state = MutableStateFlow(PlaybackState())
-    override fun prepare(song: Song, autoPlay: Boolean) { state.value = PlaybackState(song, playing = autoPlay, durationMs = 30_000) }
+    override val queue = MutableStateFlow<List<Song>>(emptyList())
+    override fun prepare(song: Song, autoPlay: Boolean, queue: List<Song>) {
+        this.queue.value = queue
+        state.value = PlaybackState(song, playing = autoPlay, durationMs = 30_000)
+    }
     override fun play() { state.value = state.value.copy(playing = true) }
     override fun togglePlayback() { state.value = state.value.copy(playing = !state.value.playing) }
     override fun seekTo(positionMs: Long) { state.value = state.value.copy(positionMs = positionMs) }

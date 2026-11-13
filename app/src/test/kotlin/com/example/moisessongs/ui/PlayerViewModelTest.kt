@@ -55,7 +55,7 @@ class PlayerViewModelTest {
         assertEquals(1, player.preparations.size)
     }
 
-    @Test fun `history is recorded after playback starts rather than on selection or buffering`() = runTest {
+    @Test fun `player state carries service history failures and actual preview duration`() = runTest {
         val vm = model()
         runCurrent()
         vm.select(song(), listOf(song()))
@@ -66,7 +66,12 @@ class PlayerViewModelTest {
         assertTrue(repository.observeRecentSongs().first().isEmpty())
         player.mutableState.value = player.state.value.copy(buffering = false, playing = true, durationMs = 30_000)
         runCurrent()
-        assertEquals(listOf(song()), repository.observeRecentSongs().first())
+        player.mutableState.value = player.state.value.copy(historyFailed = true)
+        runCurrent()
+        assertTrue(vm.historyFailed.value)
+        player.mutableState.value = player.state.value.copy(historyFailed = false)
+        runCurrent()
+        assertFalse(vm.historyFailed.value)
         assertEquals(30_000L, vm.playback.value.durationMs)
         assertNotEquals(song().durationMs, vm.playback.value.durationMs)
     }

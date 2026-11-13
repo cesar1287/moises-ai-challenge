@@ -125,6 +125,7 @@ fun Album.toEntity() = AlbumEntity(id, title, artist, artworkUrl, releaseDate, g
     exportSchema = true,
 )
 abstract class SongDatabase : RoomDatabase() {
+    companion object { const val NAME = "songs.db" }
     abstract fun songs(): SongDao
 }
 

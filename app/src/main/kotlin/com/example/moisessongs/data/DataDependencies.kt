@@ -19,7 +19,7 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 /** The application's composition root sees contracts, without configuring transport or storage. */
 class DataDependencies(context: Context) {
     private val application = context.applicationContext
-    private val database by lazy { Room.databaseBuilder(application, SongDatabase::class.java, "songs.db").build() }
+    private val database by lazy { Room.databaseBuilder(application, SongDatabase::class.java, SongDatabase.NAME).build() }
     // Construct Retrofit/OkHttp on the catalog's worker dispatcher, only when networking is needed.
     private val api by lazy {
         val client = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS)
