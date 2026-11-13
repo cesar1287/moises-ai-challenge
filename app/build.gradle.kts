@@ -14,6 +14,7 @@ android {
     minSdk = 26
     targetSdk = 36
     testInstrumentationRunner = "com.example.moisessongs.SongsTestRunner"
+    testInstrumentationRunnerArguments["clearPackageData"] = "true"
     versionCode = 1
     versionName = "1.0"
   }
@@ -37,6 +38,10 @@ android {
     aidl = false
     buildConfig = false
     shaders = false
+  }
+  testOptions {
+    // Isolate application state and media-service bindings between device tests.
+    execution = "ANDROIDX_TEST_ORCHESTRATOR"
   }
   androidResources {
     generateLocaleConfig = true
@@ -112,6 +117,7 @@ dependencies {
   androidTestImplementation(libs.androidx.test.core)
   androidTestImplementation(libs.androidx.test.ext.junit)
   androidTestImplementation(libs.androidx.test.runner)
+  androidTestUtil(libs.androidx.test.orchestrator)
   androidTestImplementation(libs.androidx.test.espresso.core)
 
   // Navigation

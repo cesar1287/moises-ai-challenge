@@ -55,6 +55,9 @@ class SongsJourneyTest {
         rule.onNodeWithText("View album").performClick()
         rule.onNodeWithText("One More Time").assertIsDisplayed().performClick()
         rule.onNodeWithText("Now playing").assertIsDisplayed()
+        rule.waitUntil(5_000) {
+            runCatching { rule.onNodeWithText("One More Time").isDisplayed() }.getOrDefault(false)
+        }
         rule.onNodeWithText("One More Time").assertIsDisplayed()
         rule.onNodeWithContentDescription("Back").performClick()
         rule.onNodeWithText("Songs").assertIsDisplayed()
