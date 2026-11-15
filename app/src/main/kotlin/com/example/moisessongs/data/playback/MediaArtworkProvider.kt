@@ -1,6 +1,7 @@
 package com.example.moisessongs.data.playback
 
 import android.content.ContentProvider
+import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
@@ -13,19 +14,22 @@ import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.toBitmap
 import com.example.moisessongs.DependenciesOwner
+import com.example.moisessongs.data.ContentTypes
+import com.example.moisessongs.domain.ArtworkPolicy
 import com.example.moisessongs.domain.largeArtworkUrl
+import java.io.FileNotFoundException
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import java.io.FileNotFoundException
-import kotlin.time.Duration.Companion.seconds
 
 internal object ArtworkUris {
     private const val AUTHORITY_SUFFIX = ".artwork"
+    const val READ_MODE = "r"
     const val SONG = "song"
     const val ALBUM = "album"
-    fun root(context: Context): Uri = Uri.Builder().scheme("content")
+    fun root(context: Context): Uri = Uri.Builder().scheme(ContentResolver.SCHEME_CONTENT)
         .authority(context.packageName + AUTHORITY_SUFFIX).build()
     fun song(context: Context, id: Long): Uri = root(context).buildUpon().appendPath(SONG).appendPath(id.toString()).build()
     fun album(context: Context, id: Long): Uri = root(context).buildUpon().appendPath(ALBUM).appendPath(id.toString()).build()
@@ -33,23 +37,28 @@ internal object ArtworkUris {
 
 /** Car hosts require local artwork URIs. Only accepted media controllers receive read grants. */
 class MediaArtworkProvider : ContentProvider() {
+    private companion object {
+        const val UNKNOWN_ARTWORK = "Unknown artwork"
+        const val LOAD_TIMEOUT_SECONDS = 15
+        const val PNG_COMPRESSION_QUALITY = 100
+    }
     override fun onCreate() = true
-    override fun getType(uri: Uri) = "image/png"
+    override fun getType(uri: Uri) = ContentTypes.PNG
 
     override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor {
         val app = requireNotNull(context).applicationContext
         val parts = uri.pathSegments
-        if (mode != "r" || uri.authority != ArtworkUris.root(app).authority ||
+        if (mode != ArtworkUris.READ_MODE || uri.authority != ArtworkUris.root(app).authority ||
             parts.size != 2 || parts[0] !in setOf(ArtworkUris.SONG, ArtworkUris.ALBUM) ||
             (parts[1].toLongOrNull() ?: 0) <= 0 || uri.query != null) {
-            throw FileNotFoundException("Unknown artwork")
+            throw FileNotFoundException(UNKNOWN_ARTWORK)
         }
         // Return immediately. Cache lookup, image loading, decoding and streaming run on a worker.
-        return openPipeHelper(uri, "image/png", null, Unit) { output, _, _, _, _ ->
+        return openPipeHelper(uri, ContentTypes.PNG, null, Unit) { output, _, _, _, _ ->
             ParcelFileDescriptor.AutoCloseOutputStream(output).use { stream ->
                 try {
                     runBlocking(Dispatchers.IO) {
-                        withTimeout(15.seconds) {
+                        withTimeout(LOAD_TIMEOUT_SECONDS.seconds) {
                             val repository = (app as DependenciesOwner).dependencies.repository
                             val id = parts[1].toLong()
                             val url = if (parts[0] == ArtworkUris.SONG) repository.getSong(id)?.artworkUrl
@@ -57,12 +66,13 @@ class MediaArtworkProvider : ContentProvider() {
                                     ?: repository.observeRecentSongs().first().firstOrNull { it.albumId == id }?.artworkUrl
                             if (url != null) {
                                 val request = ImageRequest.Builder(app).data(largeArtworkUrl(url))
-                                    .size(600).allowHardware(false).build()
+                                    .size(ArtworkPolicy.LARGE_SIZE_PX).allowHardware(false).build()
                                 var result = app.imageLoader.execute(request)
                                 if (result !is SuccessResult && largeArtworkUrl(url) != url) {
                                     result = app.imageLoader.execute(request.newBuilder().data(url).build())
                                 }
-                                (result as? SuccessResult)?.image?.toBitmap()?.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                                (result as? SuccessResult)?.image?.toBitmap()?.compress(
+                                    Bitmap.CompressFormat.PNG, PNG_COMPRESSION_QUALITY, stream)
                             }
                         }
                     }

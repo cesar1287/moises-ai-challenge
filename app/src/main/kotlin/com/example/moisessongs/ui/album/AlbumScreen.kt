@@ -14,10 +14,13 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.example.moisessongs.R
 import com.example.moisessongs.domain.Song
 import com.example.moisessongs.ui.common.*
+import com.example.moisessongs.ui.theme.AppCorners
+import com.example.moisessongs.ui.theme.AppLayout
+import com.example.moisessongs.ui.theme.AppSizes
+import com.example.moisessongs.ui.theme.AppSpacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,27 +29,27 @@ fun AlbumScreen(state: AlbumUiState, onBack: () -> Unit, onRefresh: () -> Unit, 
     val listState = rememberLazyListState()
     val refreshDescription = stringResource(R.string.refresh_album)
     Scaffold(contentWindowInsets = WindowInsets.safeDrawing) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).widthIn(max = 720.dp)) {
+        Column(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).widthIn(max = AppLayout.contentMaxWidth)) {
             ScreenHeader(album?.title ?: stringResource(R.string.album), onBack)
             PullToRefreshBox(isRefreshing = state.loading && album != null, onRefresh = onRefresh,
                 modifier = Modifier.weight(1f)) {
                 LazyColumn(state = listState, modifier = Modifier.fillMaxSize().semantics {
                     customActions = listOf(CustomAccessibilityAction(refreshDescription) { onRefresh(); true })
-                }, contentPadding = PaddingValues(bottom = 24.dp)) {
+                }, contentPadding = PaddingValues(bottom = AppSpacing.screen)) {
                     if (state.failure != null) item {
                         FailureBanner(state.failure, if (album != null) stringResource(R.string.saved_album) else null, onRefresh)
                     }
                     if (album == null && state.loading) item { LoadingState(stringResource(R.string.loading_album)) }
                     if (album != null) {
                         item(key = ListItemKeys.ALBUM_HEADER) {
-                            Column(Modifier.fillMaxWidth().padding(bottom = 48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Artwork(album.artworkUrl, 120.dp, radius = 20.dp)
-                                Spacer(Modifier.height(16.dp))
+                            Column(Modifier.fillMaxWidth().padding(bottom = AppSpacing.section), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Artwork(album.artworkUrl, AppSizes.albumArtwork, radius = AppCorners.artwork)
+                                Spacer(Modifier.height(AppSpacing.regular))
                                 Text(album.title, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(horizontal = 24.dp))
-                                Spacer(Modifier.height(8.dp))
+                                    modifier = Modifier.padding(horizontal = AppSpacing.screen))
+                                Spacer(Modifier.height(AppSpacing.small))
                                 Text(album.artist, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(horizontal = 24.dp))
+                                    modifier = Modifier.padding(horizontal = AppSpacing.screen))
                             }
                         }
                         items(album.songs, key = Song::id, contentType = { ListContentTypes.SONG }) { song -> SongRow(song, { onSong(song) }, compact = true) }

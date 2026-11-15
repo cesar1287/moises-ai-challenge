@@ -20,8 +20,10 @@ interface SongCatalog {
 data class CatalogSearch(val songs: List<Song>, val rawResultCount: Int)
 
 object SearchPolicy {
+    const val SUGGESTED_QUERY = "Daft Punk"
+    private val whitespace = Regex("\\s+")
     const val PAGE_SIZE = 25
     const val MAX_RESULTS = 200
-    fun normalize(query: String): String = query.trim().replace(Regex("\\s+"), " ")
+    fun normalize(query: String): String = query.trim().replace(whitespace, " ")
     fun nextLimit(previous: Int): Int = (previous + PAGE_SIZE).coerceAtMost(MAX_RESULTS)
 }

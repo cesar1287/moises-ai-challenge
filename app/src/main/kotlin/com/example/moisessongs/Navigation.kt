@@ -4,13 +4,13 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.ReportDrawnWhen
-import androidx.core.net.toUri
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.createSavedStateHandle
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -20,6 +20,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.example.moisessongs.domain.SearchPolicy
 import com.example.moisessongs.domain.Song
 import com.example.moisessongs.domain.SongRepository
 import com.example.moisessongs.ui.album.AlbumScreen
@@ -83,7 +84,7 @@ fun MainNavigation(repository: SongRepository, player: PlayerViewModel, modifier
                 })
                 val state by model.state.collectAsStateWithLifecycle()
                 SongsScreen(state, model::editInput, model::submit, model::clearSearch, model::refresh,
-                    model::loadMore, { model.search("Daft Punk") }, { openSong(it, model.state.value.songs) }, openOptions)
+                    model::loadMore, { model.search(SearchPolicy.SUGGESTED_QUERY) }, { openSong(it, model.state.value.songs) }, openOptions)
             }
             entry<Player> {
                 val playback by player.presentation.collectAsStateWithLifecycle()

@@ -4,6 +4,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -14,6 +16,11 @@ val MutedText = Color(0xFFA8A8A8)
 val SecondaryText = Color(0xFF858585)
 val SearchSurface = Color(0xFF1A1A1A)
 val SheetSurface = Color(0xFF262626)
+val SplashGradient = Brush.linearGradient(
+    colors = listOf(Color.Black, Color(0xFF00323B)),
+    start = Offset.Zero,
+    end = Offset(1800f, -900f),
+)
 
 private val Colors = darkColorScheme(
     primary = Color.White, onPrimary = Color.Black,

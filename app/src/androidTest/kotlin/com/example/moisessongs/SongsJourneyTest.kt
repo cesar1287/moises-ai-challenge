@@ -12,8 +12,8 @@ import com.example.moisessongs.domain.playback.PlaybackState
 import com.example.moisessongs.domain.playback.PreviewPlayer
 import com.example.moisessongs.ui.player.PlayerViewModel
 import com.example.moisessongs.ui.theme.MoisesSongsTheme
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -94,6 +94,14 @@ class SongsJourneyTest {
         rule.onNodeWithText("Try again").performClick()
         rule.onNodeWithText("Get Lucky").assertIsDisplayed()
         assertEquals("Daft Punk", repository.lastQuery)
+    }
+
+    @Test fun suggestedQueryMatchesTheLocalizedActionAndSearchesWithoutTyping() {
+        content()
+        val label = rule.activity.getString(R.string.try_search, SearchPolicy.SUGGESTED_QUERY)
+        rule.onNodeWithText(label).performClick()
+        rule.onNodeWithText("Get Lucky").assertIsDisplayed()
+        assertEquals(SearchPolicy.SUGGESTED_QUERY, repository.lastQuery)
     }
 
     @Test fun sheetDismissalLeavesThePlayerVisible() {
