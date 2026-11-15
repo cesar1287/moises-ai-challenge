@@ -6,7 +6,7 @@
     <string name="recently_played">Reproduzidas recentemente</string>
     <string name="discover_title">Encontre sua próxima favorita</string>
     <string name="discover_body">Busque uma música ou artista. As músicas que você ouvir aparecerão aqui para ouvir novamente.</string>
-    <string name="try_search">Experimente “Daft Punk”</string>
+    <string name="try_search">Experimente “%1$s”</string>
     <string name="no_results">Nenhuma música encontrada</string>
     <string name="no_results_body">Tente outro título ou nome de artista.</string>
     <string name="retry">Tentar novamente</string>

@@ -26,3 +26,7 @@ internal object ListItemKeys {
 internal object ListContentTypes {
     const val SONG = "song"
 }
+
+internal object UiAnimationLabels {
+    const val PREVIEW_PROGRESS = "preview progress"
+}

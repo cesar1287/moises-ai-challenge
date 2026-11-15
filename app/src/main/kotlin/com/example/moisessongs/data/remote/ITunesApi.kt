@@ -4,20 +4,20 @@ import com.example.moisessongs.domain.Album
 import com.example.moisessongs.domain.CatalogSearch
 import com.example.moisessongs.domain.Song
 import com.example.moisessongs.domain.SongCatalog
-import kotlinx.serialization.Serializable
-import retrofit2.http.GET
-import retrofit2.http.Query
 import java.io.IOException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import retrofit2.http.GET
+import retrofit2.http.Query
 
 interface ITunesApi {
-    @GET("search?media=music&entity=song&country=US")
-    suspend fun search(@Query("term") term: String, @Query("limit") limit: Int): ITunesResponse
+    @GET(ITunesContract.SEARCH)
+    suspend fun search(@Query(ITunesContract.Parameters.TERM) term: String, @Query(ITunesContract.Parameters.LIMIT) limit: Int): ITunesResponse
 
-    @GET("lookup?entity=song&country=US&limit=200")
-    suspend fun lookup(@Query("id") id: Long): ITunesResponse
+    @GET(ITunesContract.LOOKUP)
+    suspend fun lookup(@Query(ITunesContract.Parameters.ID) id: Long): ITunesResponse
 }
 
 @Serializable
@@ -56,8 +56,8 @@ class ITunesCatalog(private val apiFactory: () -> ITunesApi,
 
     override suspend fun album(id: Long): Album = withContext(mappingDispatcher) {
         val response = apiFactory().lookup(id)
-        val header = response.results.firstOrNull { it.wrapperType == "collection" }
-            ?: throw IOException("This album is no longer available in the catalog.")
+        val header = response.results.firstOrNull { it.wrapperType == ITunesContract.COLLECTION }
+            ?: throw IOException(ITunesContract.ALBUM_UNAVAILABLE)
         Album(
             id = id,
             title = header.collectionName.orEmpty(),
@@ -74,7 +74,7 @@ class ITunesCatalog(private val apiFactory: () -> ITunesApi,
 }
 
 internal fun ITunesItem.toSong(): Song? {
-    if (kind != "song" || trackId == null || trackName.isNullOrBlank() || artistName.isNullOrBlank()) return null
+    if (kind != ITunesContract.SONG || trackId == null || trackName.isNullOrBlank() || artistName.isNullOrBlank()) return null
     return Song(
         id = trackId,
         title = trackName,
@@ -89,14 +89,14 @@ internal fun ITunesItem.toSong(): Song? {
         discNumber = discNumber ?: 1,
         genre = primaryGenreName.orEmpty(),
         releaseDate = releaseDate.orEmpty(),
-        explicit = trackExplicitness == "explicit",
+        explicit = trackExplicitness == ITunesContract.EXPLICIT,
     )
 }
 
 private fun String?.secureUrl(): String? = this?.takeIf { it.isNotBlank() }?.let {
     when {
-        it.startsWith("https://") -> it
-        it.startsWith("http://") -> "https://" + it.removePrefix("http://")
+        it.startsWith(ITunesContract.HTTPS_PREFIX) -> it
+        it.startsWith(ITunesContract.HTTP_PREFIX) -> ITunesContract.HTTPS_PREFIX + it.removePrefix(ITunesContract.HTTP_PREFIX)
         else -> null
     }
 }

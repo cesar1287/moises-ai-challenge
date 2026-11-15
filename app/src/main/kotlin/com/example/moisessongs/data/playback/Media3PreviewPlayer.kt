@@ -11,10 +11,12 @@ import androidx.media3.session.SessionError
 import androidx.media3.session.SessionToken
 import com.example.moisessongs.domain.Song
 import com.example.moisessongs.domain.library.MediaIds
+import com.example.moisessongs.domain.playback.PlaybackPolicy
 import com.example.moisessongs.domain.playback.PlaybackQueue
 import com.example.moisessongs.domain.playback.PlaybackState
 import com.example.moisessongs.domain.playback.PreviewPlayer
 import com.google.common.util.concurrent.Futures
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -25,7 +27,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.time.Duration.Companion.milliseconds
 
 /** A phone-side controller; PlaybackService remains the only owner of the audio engine. */
 class Media3PreviewPlayer(context: Context, private val scope: CoroutineScope) : PreviewPlayer {
@@ -153,7 +154,7 @@ class Media3PreviewPlayer(context: Context, private val scope: CoroutineScope) :
         updateClock(player)
         if (player.isPlaying && ticker?.isActive != true) {
             ticker = scope.launch {
-                while (isActive && player.isPlaying) { updateClock(player); delay(250.milliseconds) }
+                while (isActive && player.isPlaying) { updateClock(player); delay(PlaybackPolicy.PROGRESS_INTERVAL_MS.milliseconds) }
             }
         } else if (!player.isPlaying) ticker?.cancel()
     }

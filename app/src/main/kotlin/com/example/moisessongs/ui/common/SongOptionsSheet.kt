@@ -13,9 +13,11 @@ import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.example.moisessongs.R
 import com.example.moisessongs.domain.Song
+import com.example.moisessongs.ui.theme.AppCorners
+import com.example.moisessongs.ui.theme.AppSizes
+import com.example.moisessongs.ui.theme.AppSpacing
 import com.example.moisessongs.ui.theme.SheetSurface
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -25,20 +27,20 @@ fun SongOptionsSheet(song: Song, onDismiss: () -> Unit, onAlbum: (Long) -> Unit)
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = SheetSurface,
         modifier = Modifier.semantics { paneTitle = optionsTitle },
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-        dragHandle = { Box(Modifier.fillMaxWidth().height(14.dp), contentAlignment = Alignment.Center) {
-            FigmaIcon(R.drawable.ic_grabber, width = 56.dp, height = 5.dp)
+        shape = RoundedCornerShape(topStart = AppCorners.sheet, topEnd = AppCorners.sheet),
+        dragHandle = { Box(Modifier.fillMaxWidth().height(AppSizes.sheetHandleArea), contentAlignment = Alignment.Center) {
+            FigmaIcon(R.drawable.ic_grabber, width = AppSizes.sheetHandleWidth, height = AppSizes.sheetHandleHeight)
         } }) {
-        Column(Modifier.fillMaxWidth().padding(bottom = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.fillMaxWidth().padding(bottom = AppSpacing.extraLarge), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(song.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
+                textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = AppSpacing.screen, vertical = AppSpacing.small))
             Text(song.artist, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(horizontal = 24.dp))
-            Spacer(Modifier.height(24.dp))
-            Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp)
+                modifier = Modifier.padding(horizontal = AppSpacing.screen))
+            Spacer(Modifier.height(AppSpacing.screen))
+            Row(Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screen)
                 .clickable(enabled = song.albumId != null, role = Role.Button) { song.albumId?.let(onAlbum) }
-                .heightIn(min = 56.dp).padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                .heightIn(min = AppSizes.sheetAction).padding(horizontal = AppSpacing.small),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppSpacing.regular)) {
                 FigmaIcon(R.drawable.ic_album)
                 Text(stringResource(if (song.albumId != null) R.string.view_album else R.string.album_unavailable),
                     style = MaterialTheme.typography.bodyLarge)

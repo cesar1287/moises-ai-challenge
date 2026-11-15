@@ -1,9 +1,9 @@
 package com.example.moisessongs
 
+import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import android.content.Context
 import com.example.moisessongs.data.local.RoomSongStore
 import com.example.moisessongs.data.local.SongDatabase
 import com.example.moisessongs.domain.Album
@@ -78,6 +78,26 @@ class RoomSongStoreTest {
         store.saveAlbum(album)
         store.saveSearch("artist", SearchSnapshot(listOf(testSong(1)), 25))
         assertEquals(album, store.observeAlbum(10).first())
+    }
+
+    @Test fun tiedHistoryTimestampsUseTheSameOrderingForReadingAndEviction() = runBlocking {
+        for (id in 1L..25L) store.recordPlayed(testSong(id), 100)
+        assertEquals((25L downTo 6L).toList(), store.observeRecentSongs().first().map { it.id })
+        store.recordPlayed(testSong(1), 101)
+        assertEquals(listOf(1L) + (25L downTo 7L).toList(),
+            store.observeRecentSongs().first().map { it.id })
+    }
+
+    @Test fun refreshingAnAlbumToEmptyKeepsItsHeaderAndOtherCachedMembership() = runBlocking {
+        val initial = Album(10, "Discovery", "Daft Punk", null, "2001", "Electronic", 2, null,
+            listOf(testSong(2), testSong(1)))
+        assertNull(store.observeAlbum(10).first())
+        store.saveAlbum(initial)
+        store.saveSearch("artist", SearchSnapshot(listOf(testSong(1)), 25))
+        val empty = initial.copy(songs = emptyList(), trackCount = 0)
+        store.saveAlbum(empty)
+        assertEquals(empty, store.observeAlbum(10).first())
+        assertEquals(listOf(testSong(1)), store.observeSearch("artist").first()!!.songs)
     }
 
     @Test fun recordingAnOlderQueueEntryDoesNotOverwriteRefreshedCatalogMetadata() = runBlocking {

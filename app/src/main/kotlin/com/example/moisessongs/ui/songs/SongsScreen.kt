@@ -21,19 +21,22 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.CustomAccessibilityAction
-import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.unit.dp
 import com.example.moisessongs.R
 import com.example.moisessongs.domain.SearchPolicy
 import com.example.moisessongs.domain.Song
 import com.example.moisessongs.ui.common.*
+import com.example.moisessongs.ui.theme.AppCorners
+import com.example.moisessongs.ui.theme.AppLayout
+import com.example.moisessongs.ui.theme.AppSizes
+import com.example.moisessongs.ui.theme.AppSpacing
 import com.example.moisessongs.ui.theme.MutedText
 import com.example.moisessongs.ui.theme.SearchSurface
 import kotlinx.coroutines.flow.first
@@ -80,7 +83,7 @@ fun SongsScreen(
         }
     }
     Scaffold(contentWindowInsets = WindowInsets.safeDrawing) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).widthIn(max = 720.dp)) {
+        Column(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).widthIn(max = AppLayout.contentMaxWidth)) {
             ScreenHeader(stringResource(R.string.songs)) {
                 if (!searchExpanded) AssetButton(R.drawable.ic_search_white, stringResource(R.string.search), {
                     searchExpanded = true
@@ -89,11 +92,11 @@ fun SongsScreen(
             }
             if (searchExpanded) {
                 val description = stringResource(R.string.search_songs)
-                Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)
-                    .heightIn(min = 48.dp).background(SearchSurface, RoundedCornerShape(12.dp))
-                    .padding(start = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = AppSpacing.large, vertical = AppSpacing.small)
+                    .heightIn(min = AppSizes.touchTarget).background(SearchSurface, RoundedCornerShape(AppCorners.medium))
+                    .padding(start = AppSpacing.regular), verticalAlignment = Alignment.CenterVertically) {
                     FigmaIcon(R.drawable.ic_search)
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(AppSpacing.small))
                     BasicTextField(value = state.input, onValueChange = onInput, singleLine = true,
                         textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
@@ -101,7 +104,7 @@ fun SongsScreen(
                         keyboardActions = KeyboardActions(onSearch = {
                             focus.clearFocus(); keyboard?.hide(); onSubmit(); searchExpanded = false
                         }),
-                        modifier = Modifier.weight(1f).padding(vertical = 14.dp).focusRequester(focusRequester)
+                        modifier = Modifier.weight(1f).padding(vertical = AppSpacing.inputVertical).focusRequester(focusRequester)
                             .testTag(UiTestTags.SEARCH_INPUT).semantics { contentDescription = description },
                         decorationBox = { field ->
                             Box {
@@ -111,8 +114,8 @@ fun SongsScreen(
                             }
                         })
                     if (state.input.isNotEmpty()) IconButton(onClick = { onClear(); searchExpanded = true }) {
-                        Icon(painterResource(R.drawable.ic_close), stringResource(R.string.clear_search), Modifier.size(20.dp), tint = MutedText)
-                    } else Spacer(Modifier.width(16.dp))
+                        Icon(painterResource(R.drawable.ic_close), stringResource(R.string.clear_search), Modifier.size(AppSizes.smallIcon), tint = MutedText)
+                    } else Spacer(Modifier.width(AppSpacing.regular))
                 }
             }
             PullToRefreshBox(isRefreshing = state.loading && state.songs.isNotEmpty(), onRefresh = onRefresh,
@@ -120,7 +123,7 @@ fun SongsScreen(
                 LazyColumn(state = listState, modifier = Modifier.fillMaxSize().testTag(UiTestTags.SONG_LIST).semantics {
                     customActions = listOf(CustomAccessibilityAction(refreshDescription) { onRefresh(); true })
                 },
-                    contentPadding = PaddingValues(bottom = 24.dp)) {
+                    contentPadding = PaddingValues(bottom = AppSpacing.screen)) {
                     if (state.failure != null) item(key = ListItemKeys.FAILURE) {
                         FailureBanner(state.failure,
                             savedLabel = if (state.songs.isNotEmpty()) stringResource(R.string.saved_results) else null,
@@ -129,11 +132,11 @@ fun SongsScreen(
                     if (state.query.isBlank() && state.recentSongs.isNotEmpty()) item(key = ListItemKeys.RECENT_HEADING) {
                         Text(stringResource(R.string.recently_played), color = MutedText,
                             style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp).semantics { heading() })
+                            modifier = Modifier.padding(horizontal = AppSpacing.screen, vertical = AppSpacing.medium).semantics { heading() })
                     }
                     if (state.query.isBlank() && state.recentSongs.isEmpty()) item(key = ListItemKeys.WELCOME) {
                         EmptyState(stringResource(R.string.discover_title), stringResource(R.string.discover_body),
-                            stringResource(R.string.try_search), onSuggestion)
+                            stringResource(R.string.try_search, SearchPolicy.SUGGESTED_QUERY), onSuggestion)
                     }
                     if (state.loading && state.songs.isEmpty()) item(key = ListItemKeys.LOADING) {
                         LoadingState(stringResource(R.string.loading))
@@ -151,7 +154,7 @@ fun SongsScreen(
                                 stringResource(if (state.snapshot.requestedLimit >= SearchPolicy.MAX_RESULTS)
                                     R.string.search_limit else R.string.end_results),
                                 style = MaterialTheme.typography.bodySmall, color = MutedText,
-                                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                                modifier = Modifier.fillMaxWidth().padding(AppSpacing.screen),
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                             else -> Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                                 TextButton(onClick = onLoadMore, enabled = !state.loading) { Text(stringResource(R.string.load_more)) }

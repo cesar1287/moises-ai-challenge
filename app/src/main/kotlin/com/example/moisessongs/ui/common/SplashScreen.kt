@@ -8,18 +8,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
 import com.example.moisessongs.R
+import com.example.moisessongs.ui.theme.AppSizes
+import com.example.moisessongs.ui.theme.SplashGradient
 
 @Composable
 fun SplashScreen() {
-    Box(Modifier.fillMaxSize().background(Brush.linearGradient(
-        colors = listOf(Color.Black, Color(0xFF00323B)), start = Offset.Zero,
-        end = Offset(1800f, -900f))), contentAlignment = Alignment.Center) {
-        Image(painterResource(R.drawable.musical_note), null, Modifier.size(100.dp))
+    Box(Modifier.fillMaxSize().background(SplashGradient), contentAlignment = Alignment.Center) {
+        Image(painterResource(R.drawable.musical_note), null, Modifier.size(AppSizes.splashArtwork))
     }
 }

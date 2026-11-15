@@ -2,6 +2,7 @@ package com.example.moisessongs.data
 
 import android.content.Context
 import androidx.room.Room
+import com.example.moisessongs.data.local.DatabaseContract
 import com.example.moisessongs.data.local.RoomSongStore
 import com.example.moisessongs.data.local.SongDatabase
 import com.example.moisessongs.data.playback.Media3PreviewPlayer
@@ -19,11 +20,12 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 /** The application's composition root sees contracts, without configuring transport or storage. */
 class DataDependencies(context: Context) {
     private val application = context.applicationContext
-    private val database by lazy { Room.databaseBuilder(application, SongDatabase::class.java, SongDatabase.NAME).build() }
+    private val database by lazy { Room.databaseBuilder(application, SongDatabase::class.java, DatabaseContract.NAME).build() }
     // Construct Retrofit/OkHttp on the catalog's worker dispatcher, only when networking is needed.
     private val api by lazy {
-        val client = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(20, TimeUnit.SECONDS).callTimeout(30, TimeUnit.SECONDS).build()
+        val client = OkHttpClient.Builder().connectTimeout(ITunesConfig.CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(ITunesConfig.READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .callTimeout(ITunesConfig.CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS).build()
         Retrofit.Builder().baseUrl(ITunesConfig.BASE_URL).client(client)
             .addConverterFactory(ITunesConfig.json.asConverterFactory(ITunesConfig.jsonMediaType))
             .build().create(ITunesApi::class.java)

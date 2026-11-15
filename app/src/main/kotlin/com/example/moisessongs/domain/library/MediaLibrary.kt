@@ -23,6 +23,10 @@ object MediaIds {
 
 /** Browsing uses cached content first, including when the phone UI is not running. */
 class MediaLibrary(private val repository: SongRepository) {
+    private companion object {
+        const val ALBUM_UNAVAILABLE = "Album is unavailable"
+        const val SONG_UNAVAILABLE = "Song is unavailable"
+    }
     suspend fun recent(): List<Song> = repository.observeRecentSongs().first()
 
     suspend fun albums(): List<Song> = recent().filter { it.albumId != null }.distinctBy(Song::albumId)
@@ -30,10 +34,10 @@ class MediaLibrary(private val repository: SongRepository) {
     suspend fun album(id: Long): Album {
         repository.observeAlbum(id).first()?.let { return it }
         repository.refreshAlbum(id)
-        return requireNotNull(repository.observeAlbum(id).first()) { "Album is unavailable" }
+        return requireNotNull(repository.observeAlbum(id).first()) { ALBUM_UNAVAILABLE }
     }
 
-    suspend fun song(id: Long): Song = requireNotNull(repository.getSong(id)) { "Song is unavailable" }
+    suspend fun song(id: Long): Song = requireNotNull(repository.getSong(id)) { SONG_UNAVAILABLE }
 
     suspend fun queueFor(song: Song): List<Song> {
         val album = song.albumId?.let { repository.observeAlbum(it).first() }

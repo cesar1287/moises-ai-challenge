@@ -11,8 +11,8 @@ import androidx.media3.session.MediaConstants
 import androidx.media3.session.MediaLibraryService.LibraryParams
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession
-import androidx.media3.session.SessionError
 import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
 import com.example.moisessongs.R
 import com.example.moisessongs.domain.DataFailure
@@ -27,8 +27,8 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.guava.await
+import kotlinx.coroutines.guava.future
 
 @androidx.annotation.OptIn(UnstableApi::class)
 internal class SongLibraryCallback(
@@ -36,7 +36,10 @@ internal class SongLibraryCallback(
     repository: SongRepository,
     private val scope: CoroutineScope,
 ) : MediaLibrarySession.Callback {
-    private companion object { const val MAX_QUERY_LENGTH = 200 }
+    private companion object {
+        const val MAX_QUERY_LENGTH = 200
+        const val UNKNOWN_MEDIA_ID = "Unknown media ID"
+    }
     private val library = MediaLibrary(repository)
 
     override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult {
@@ -81,7 +84,7 @@ internal class SongLibraryCallback(
             else -> MediaIds.songId(mediaId)?.let { library.song(it).toMediaItem(context) }
                 ?: MediaIds.albumId(mediaId)?.let { id -> library.album(id).let {
                     libraryFolder(context, mediaId, it.title, it.artworkUrl, it.artist)
-                } } ?: throw IllegalArgumentException("Unknown media ID")
+                } } ?: throw IllegalArgumentException(UNKNOWN_MEDIA_ID)
         }
         LibraryResult.ofItem(item, null)
     }
